@@ -23,15 +23,15 @@ module.exports = async (req, res, next) => {
       req.user = await User.findById(decoded.user.id).select('-password');
 
       // Move on to the next function (the actual route handler)
-      next();
+      return next();
     } catch (err) {
       console.error(err);
-      res.status(401).json({ msg: 'Token is not valid' });
+      return res.status(401).json({ msg: 'Token is not valid' });
     }
   }
 
   // If no token is found
   if (!token) {
-    res.status(401).json({ msg: 'No token, authorization denied' });
+    return res.status(401).json({ msg: 'No token, authorization denied' });
   }
 };
