@@ -502,4 +502,278 @@ describe('Snippets API Tests - Global Feed Feature', () => {
       expect(commentRes.body.comments.length).toBe(1);
     });
   });
+
+  // ==========================================
+  // TEST 7: PAGINATION - INFINITE SCROLL
+  // ==========================================
+  describe('GET /api/snippets - Pagination (Infinite Scroll)', () => {
+
+    beforeEach(async () => {
+      // Create 25 snippets for pagination testing
+      for (let i = 1; i <= 25; i++) {
+        await request(app)
+          .post('/api/snippets')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            title: `Snippet ${i}`,
+            code: `code snippet ${i}`,
+            language: i % 5 === 0 ? 'python' : i % 4 === 0 ? 'java' : i % 3 === 0 ? 'cpp' : i % 2 === 0 ? 'html' : 'c'
+          });
+      }
+    });
+
+    test('Should return paginated results with default pagination (page=1, limit=10)', async () => {
+      const res = await request(app)
+        .get('/api/snippets');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.currentPage).toBe(1);
+      expect(res.body.count).toBeLessThanOrEqual(10);
+      expect(res.body.totalSnippets).toBeGreaterThanOrEqual(25);
+      expect(res.body.totalPages).toBeGreaterThanOrEqual(3);
+      expect(res.body.hasMore).toBe(true);
+    });
+
+    test('Should return page 2 with correct results', async () => {
+      const res = await request(app)
+        .get('/api/snippets?page=2&limit=10');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.currentPage).toBe(2);
+      expect(res.body.count).toBeLessThanOrEqual(10);
+      expect(res.body.hasMore).toBe(true);
+    });
+
+    test('Should return last page with hasMore=false', async () => {
+      const res = await request(app)
+        .get('/api/snippets?page=3&limit=10');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.currentPage).toBe(3);
+      expect(res.body.hasMore).toBe(false);
+    });
+
+    test('Should support custom limit parameter', async () => {
+      const res = await request(app)
+        .get('/api/snippets?page=1&limit=5');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.count).toBeLessThanOrEqual(5);
+      expect(res.body.totalPages).toBeGreaterThanOrEqual(5);
+    });
+
+    test('Should return correct total counts and pages', async () => {
+      const res = await request(app)
+        .get('/api/snippets?page=1&limit=10');
+
+      expect(res.statusCode).toBe(200);
+      const expectedPages = Math.ceil(res.body.totalSnippets / 10);
+      expect(res.body.totalPages).toBe(expectedPages);
+    });
+
+    test('Should reject invalid page number (page < 1)', async () => {
+      const res = await request(app)
+        .get('/api/snippets?page=0');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toContain('Page must be greater than 0');
+    });
+
+    test('Should reject invalid limit (limit > 100)', async () => {
+      const res = await request(app)
+        .get('/api/snippets?limit=101');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toContain('between 1 and 100');
+    });
+
+    test('Should reject invalid limit (limit < 1)', async () => {
+      const res = await request(app)
+        .get('/api/snippets?limit=0');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toContain('between 1 and 100');
+    });
+
+    test('Should return snippets sorted by newest first on all pages', async () => {
+      const page1 = await request(app).get('/api/snippets?page=1&limit=10');
+      const page2 = await request(app).get('/api/snippets?page=2&limit=10');
+
+      // Check page 1 is sorted newest first
+      for (let i = 0; i < page1.body.data.length - 1; i++) {
+        const current = new Date(page1.body.data[i].createdAt).getTime();
+        const next = new Date(page1.body.data[i + 1].createdAt).getTime();
+        expect(current).toBeGreaterThanOrEqual(next);
+      }
+
+      // Check page 2 is sorted newest first
+      for (let i = 0; i < page2.body.data.length - 1; i++) {
+        const current = new Date(page2.body.data[i].createdAt).getTime();
+        const next = new Date(page2.body.data[i + 1].createdAt).getTime();
+        expect(current).toBeGreaterThanOrEqual(next);
+      }
+    });
+
+    test('Should limit comments to 3 in feed responses', async () => {
+      // Create snippet with many comments
+      const snippetRes = await request(app)
+        .post('/api/snippets')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          code: 'test code',
+          language: 'python'
+        });
+
+      const snippetId = snippetRes.body._id;
+
+      // Add 5 comments
+      for (let i = 1; i <= 5; i++) {
+        await request(app)
+          .post(`/api/snippets/${snippetId}/comment`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ text: `Comment ${i}` });
+      }
+
+      // Fetch feed
+      const feedRes = await request(app)
+        .get('/api/snippets?page=1&limit=10');
+
+      const snippet = feedRes.body.data.find(s => s._id === snippetId);
+      expect(snippet.comments.length).toBeLessThanOrEqual(3);
+      expect(snippet.totalComments).toBe(5);
+      expect(snippet.showMoreComments).toBe(true);
+    });
+
+    test('Should show showMoreComments flag when comments > 3', async () => {
+      const snippetRes = await request(app)
+        .post('/api/snippets')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          code: 'test',
+          language: 'python'
+        });
+
+      const snippetId = snippetRes.body._id;
+
+      // Add 4 comments
+      for (let i = 1; i <= 4; i++) {
+        await request(app)
+          .post(`/api/snippets/${snippetId}/comment`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ text: `Comment ${i}` });
+      }
+
+      const feedRes = await request(app)
+        .get('/api/snippets');
+
+      const snippet = feedRes.body.data.find(s => s._id === snippetId);
+      expect(snippet.showMoreComments).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // TEST 8: COMMENT PAGINATION ENDPOINT
+  // ==========================================
+  describe('GET /api/snippets/:id/comments - Comment Pagination', () => {
+
+    let snippetId;
+
+    beforeEach(async () => {
+      // Create a snippet
+      const snippetRes = await request(app)
+        .post('/api/snippets')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          code: 'test code',
+          language: 'python'
+        });
+
+      snippetId = snippetRes.body._id;
+
+      // Add 15 comments to the snippet
+      for (let i = 1; i <= 15; i++) {
+        await request(app)
+          .post(`/api/snippets/${snippetId}/comment`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ text: `Comment ${i}` });
+      }
+    });
+
+    test('Should fetch comments with pagination (page 1)', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?page=1&limit=5`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.count).toBe(5);
+      expect(res.body.totalComments).toBe(15);
+      expect(res.body.totalPages).toBe(3);
+      expect(res.body.currentPage).toBe(1);
+      expect(res.body.hasMore).toBe(true);
+      expect(res.body.data).toBeInstanceOf(Array);
+    });
+
+    test('Should fetch comments page 2', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?page=2&limit=5`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.currentPage).toBe(2);
+      expect(res.body.hasMore).toBe(true);
+      expect(res.body.count).toBe(5);
+    });
+
+    test('Should return hasMore=false on last page', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?page=3&limit=5`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.currentPage).toBe(3);
+      expect(res.body.hasMore).toBe(false);
+      expect(res.body.count).toBe(5);
+    });
+
+    test('Should support custom limit for comments', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?page=1&limit=10`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.count).toBeLessThanOrEqual(10);
+      expect(res.body.totalPages).toBe(2);
+    });
+
+    test('Should return 404 for non-existent snippet', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      const res = await request(app)
+        .get(`/api/snippets/${fakeId}/comments`);
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.msg).toBe('Snippet not found');
+    });
+
+    test('Should reject invalid page parameter', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?page=0`);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toContain('Page must be greater than 0');
+    });
+
+    test('Should reject invalid limit parameter', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments?limit=101`);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toContain('between 1 and 100');
+    });
+
+    test('Should be public endpoint (no auth required)', async () => {
+      const res = await request(app)
+        .get(`/api/snippets/${snippetId}/comments`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
 });

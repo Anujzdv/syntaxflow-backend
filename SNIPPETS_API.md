@@ -67,18 +67,38 @@ The following languages are now supported for code snippets:
 
 ---
 
-### 2️⃣ Get Global Feed (All Snippets)
+### 2️⃣ Get Global Feed (All Snippets) - With Pagination
 **Endpoint:** `GET /api/snippets`  
 **Authentication:** Not required (Public)  
 **Method:** GET
 
-**Query Parameters:** None (returns all snippets)
+**Query Parameters:**
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 10, max: 100)
+
+**Example Requests:**
+```bash
+# Get first page with 10 items (default)
+GET /api/snippets
+
+# Get page 2 with 5 items per page
+GET /api/snippets?page=2&limit=5
+
+# Infinite scroll - keep incrementing page and limit
+GET /api/snippets?page=1&limit=20
+GET /api/snippets?page=2&limit=20
+GET /api/snippets?page=3&limit=20
+```
 
 **Success Response (200 OK):**
 ```json
 {
   "success": true,
-  "count": 15,
+  "count": 10,
+  "totalSnippets": 150,
+  "totalPages": 15,
+  "currentPage": 1,
+  "hasMore": true,
   "data": [
     {
       "_id": "snippet-id-123",
@@ -102,21 +122,39 @@ The following languages are now supported for code snippets:
           "text": "Great snippet!",
           "date": "2026-04-17T10:05:00.000Z"
         }
+        // ... Up to 3 comments (see totalComments for full count)
       ],
+      "totalComments": 8,
+      "showMoreComments": true,
       "createdAt": "2026-04-17T10:00:00.000Z",
       "updatedAt": "2026-04-17T10:05:00.000Z"
     }
-    // ... more snippets sorted by newest first
+    // ... more snippets
   ]
 }
 ```
 
-**Features:**
-- ✅ Snippets sorted by newest first (createdAt: -1)
-- ✅ User information populated
-- ✅ Likes array included
-- ✅ Comments array included
-- ✅ Public endpoint (no auth required)
+**Key Features for Infinite Scroll:**
+- ✅ `hasMore: true/false` - Tell frontend when to Stop requesting
+- ✅ `totalPages` - Total number of pages available
+- ✅ `totalSnippets` - Total number of snippets in database
+- ✅ `totalComments` - Shows actual comment count (for "View X more comments" feature)
+- ✅ `showMoreComments` - Flag if comments are limited to 3 in feed
+- ✅ Comments limited to 3 per snippet in feed for performance
+- ✅ Newest first (createdAt: -1)
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "msg": "Page must be greater than 0"
+}
+```
+or
+```json
+{
+  "msg": "Limit must be between 1 and 100"
+}
+```
 
 ---
 
@@ -160,7 +198,71 @@ The following languages are now supported for code snippets:
 
 ---
 
-### 4️⃣ Add Comment to Snippet
+### 4️⃣ Get Comments for a Snippet (Pagination)
+**Endpoint:** `GET /api/snippets/:id/comments`  
+**Authentication:** Not required (Public)  
+**Method:** GET
+
+**URL Parameters:**
+- `id` - The snippet ID
+
+**Query Parameters:**
+- `page` - Page number (default: 1)
+- `limit` - Comments per page (default: 10, max: 100)
+
+**Example Requests:**
+```bash
+# Get first page of comments (default 10 per page)
+GET /api/snippets/SNIPPET_ID/comments
+
+# Get page 2 with 5 comments per page
+GET /api/snippets/SNIPPET_ID/comments?page=2&limit=5
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "count": 10,
+  "totalComments": 45,
+  "totalPages": 5,
+  "currentPage": 1,
+  "hasMore": true,
+  "data": [
+    {
+      "user": "user-id-1",
+      "name": "John Doe",
+      "text": "This is amazing!",
+      "date": "2026-04-17T10:10:00.000Z"
+    },
+    {
+      "user": "user-id-2",
+      "name": "Jane Smith",
+      "text": "Great code!",
+      "date": "2026-04-17T10:05:00.000Z"
+    }
+    // ... more comments
+  ]
+}
+```
+
+**Key Features:**
+- ✅ Paginated comments for viewing all feedback
+- ✅ `hasMore` flag for infinite scroll
+- ✅ Shows when feed limits comments to 3, use this endpoint to load rest
+- ✅ Most recent comments first
+- ✅ Public endpoint (no auth required)
+
+**Error Response (404 Not Found):**
+```json
+{
+  "msg": "Snippet not found"
+}
+```
+
+---
+
+### 5️⃣ Add Comment to Snippet
 **Endpoint:** `POST /api/snippets/:id/comment`  
 **Authentication:** Required (JWT token)  
 **Method:** POST
@@ -202,7 +304,7 @@ The following languages are now supported for code snippets:
 
 ---
 
-### 5️⃣ Report a Snippet
+### 6️⃣ Report a Snippet
 **Endpoint:** `POST /api/snippets/:id/report`  
 **Authentication:** Required (JWT token)  
 **Method:** POST
@@ -296,7 +398,7 @@ Response includes:
 
 ## 📍 Testing Workflow
 
-### 1. Create a Test Snippet
+### 1. Create Multiple Test Snippets
 ```bash
 curl -X POST https://syntaxflow-backend.onrender.com/api/snippets \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -308,18 +410,34 @@ curl -X POST https://syntaxflow-backend.onrender.com/api/snippets \
   }'
 ```
 
-### 2. Fetch Global Feed
+### 2. Fetch Global Feed with Pagination
 ```bash
+# Get first page (10 items)
 curl https://syntaxflow-backend.onrender.com/api/snippets
+
+# Get page 2 with custom limit
+curl https://syntaxflow-backend.onrender.com/api/snippets?page=2&limit=5
+
+# Check hasMore flag for infinite scroll
+curl https://syntaxflow-backend.onrender.com/api/snippets?page=100&limit=10
 ```
 
-### 3. Like a Snippet
+### 3. Test Comment Pagination
+```bash
+# Get first page of comments for snippet
+curl https://syntaxflow-backend.onrender.com/api/snippets/SNIPPET_ID/comments
+
+# Get specific page
+curl https://syntaxflow-backend.onrender.com/api/snippets/SNIPPET_ID/comments?page=2&limit=5
+```
+
+### 4. Like a Snippet
 ```bash
 curl -X POST https://syntaxflow-backend.onrender.com/api/snippets/SNIPPET_ID/like \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### 4. Add Comment
+### 5. Add Comments
 ```bash
 curl -X POST https://syntaxflow-backend.onrender.com/api/snippets/SNIPPET_ID/comment \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -331,34 +449,130 @@ curl -X POST https://syntaxflow-backend.onrender.com/api/snippets/SNIPPET_ID/com
 
 ## ✅ Test Coverage
 
-The backend has comprehensive test coverage:
-- ✅ 26 snippet tests
-- ✅ Tests for all 5 supported languages
-- ✅ Tests for create, read, like, comment, report
-- ✅ Tests for error cases (invalid language, missing fields, etc.)
-- ✅ Tests for authentication requirements
-- ✅ Integration tests for complete feed workflows
+The backend has comprehensive test coverage with **60 tests** total:
+- ✅ 15 authentication tests
+- ✅ 26 snippets feature tests
+- ✅ **19 pagination & infinite scroll tests**
+  - Pagination parameter validation
+  - Default values
+  - Edge cases (last page, invalid parameters)
+  - Comment pagination
+  - Comment limiting in feed (max 3)
+  - hasMore flag verification
 
-See `tests/snippets.test.js` for full test suite.
+See `tests/auth.test.js` and `tests/snippets.test.js` for full test suites.
 
 ---
 
 ## 🚀 Frontend Integration Checklist
 
+### Core Features
 - [ ] Update API base URL to `https://syntaxflow-backend.onrender.com`
 - [ ] Update snippet creation to accept lowercase language values
 - [ ] Update snippet POST endpoint to handle optional title/description
-- [ ] Update like endpoint from `PUT /like/:id` to `POST /:id/like`
-- [ ] Update comment endpoint to `POST /:id/comment`
 - [ ] Ensure JWT token is sent in Authorization header
 - [ ] Handle error messages from API responses
-- [ ] Populate user info when displaying snippets in feed
+
+### Pagination & Infinite Scroll
+- [ ] Implement IntersectionObserver for infinite scroll
+- [ ] Use `page` and `limit` query parameters
+- [ ] Check `hasMore` flag to know when to stop loading
+- [ ] Display `totalSnippets` as "X snippets" counter
+- [ ] Load next page when user scrolls to bottom
+- [ ] Display loading indicator while fetching
+- [ ] Handle loading errors gracefully
+
+### Feed Display
+- [ ] Populate user info when displaying snippets (name, profileImage)
 - [ ] Display likes count and allow users to toggle likes
-- [ ] Display comments and allow users to add comments
+- [ ] Display `totalComments` count
+- [ ] Show first 3 comments in feed
+- [ ] Show "View X more comments" button if `showMoreComments === true`
+- [ ] Handle comment pagination on comment detail view
+
+### Reel-Style Features
+- [ ] Use full-screen snap-scroll layout
+- [ ] One snippet per viewport
+- [ ] Auto-play/like/comment without leaving feed
+- [ ] Swipe to next snippet
+- [ ] Limit comments display for smooth scrolling
 
 ---
 
-## 📞 Support
+## � Frontend: Infinite Scroll Example
+
+Here's a React example using IntersectionObserver for infinite scroll:
+
+```javascript
+import { useEffect, useRef, useState } from 'react';
+
+function ReelsFeed() {
+  const [snippets, setSnippets] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const observerTarget = useRef(null);
+
+  const fetchSnippets = async (pageNum) => {
+    if (loading || !hasMore) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://syntaxflow-backend.onrender.com/api/snippets?page=${pageNum}&limit=10`
+      );
+      const data = await res.json();
+      
+      setSnippets(prev => [...prev, ...data.data]);
+      setHasMore(data.hasMore);
+      setPage(pageNum + 1);
+    } catch (error) {
+      console.error('Failed to load snippets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        fetchSnippets(page);
+      }
+    });
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [page, hasMore, loading]);
+
+  // Initial load
+  useEffect(() => {
+    fetchSnippets(1);
+  }, []);
+
+  return (
+    <div className="reels-feed">
+      {snippets.map(snippet => (
+        <div key={snippet._id} className="reel">
+          {/* Snippet content */}
+        </div>
+      ))}
+      
+      {/* Intersection observer target */}
+      <div ref={observerTarget} />
+      
+      {loading && <p>Loading more snippets...</p>}
+    </div>
+  );
+}
+```
+
+---
+
+## �📞 Support
 
 For any issues with the backend API, check:
 1. **Render Logs:** https://dashboard.render.com/web/srv-*** (check Instance Logs)
@@ -370,4 +584,4 @@ All feedback and issues can be reported in the GitHub repository.
 ---
 
 **Last Updated:** April 17, 2026  
-**Version:** 2.0 (Global Feed Feature)
+**Version:** 2.1 (Pagination & Infinite Scroll)

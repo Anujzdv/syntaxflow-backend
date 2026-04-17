@@ -45,26 +45,123 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// --- Get All Snippets (Global Feed) ---
+// --- Get All Snippets (Global Feed with Pagination) ---
 // @route   GET /api/snippets
-// @desc    Get all code snippets sorted by newest (for the global feed)
+// @desc    Get code snippets with pagination support for infinite scroll feed
 // @access  Public
+// @query   page - Page number (default: 1)
+// @query   limit - Items per page (default: 10)
 router.get('/', async (req, res) => {
   try {
-    // Find all snippets and sort by most recent
+    // Get pagination parameters from query
+    let page = parseInt(req.query.page);
+    let limit = parseInt(req.query.limit);
+    
+    // Set defaults only if not provided or NaN
+    if (isNaN(page) || page === undefined) page = 1;
+    if (isNaN(limit) || limit === undefined) limit = 10;
+
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ msg: 'Page must be greater than 0' });
+    }
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ msg: 'Limit must be between 1 and 100' });
+    }
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count of snippets
+    const totalSnippets = await Snippet.countDocuments();
+    const totalPages = Math.ceil(totalSnippets / limit);
+
+    // Fetch snippets with pagination
     // .populate('user', ['name', 'profileImage']) fetches user info for display
+    // Limit comments to 3 most recent for feed display
     const snippets = await Snippet.find()
       .populate('user', ['name', 'profileImage'])
-      .sort({ createdAt: -1 });
-      
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean() // Use lean() for better performance on read-only queries
+      .exec();
+
+    // Transform snippets to limit comments to first 3 for reel-style feed
+    const transformedSnippets = snippets.map(snippet => ({
+      ...snippet,
+      comments: snippet.comments ? snippet.comments.slice(0, 3) : [],
+      totalComments: snippet.comments ? snippet.comments.length : 0,
+      showMoreComments: snippet.comments && snippet.comments.length > 3,
+    }));
+
     res.json({
       success: true,
-      count: snippets.length,
-      data: snippets,
+      count: transformedSnippets.length,
+      totalSnippets,
+      totalPages,
+      currentPage: page,
+      hasMore: page < totalPages,
+      data: transformedSnippets,
     });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ msg: 'Server error while fetching snippets' });
+  }
+});
+
+// --- Get Comments for a Specific Snippet (Pagination) ---
+// @route   GET /api/snippets/:id/comments
+// @desc    Get all comments for a specific snippet with pagination
+// @access  Public
+// @query   page - Page number (default: 1)
+// @query   limit - Comments per page (default: 10)
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get pagination parameters with proper handling of 0 values
+    let page = parseInt(req.query.page);
+    let limit = parseInt(req.query.limit);
+    
+    // Set defaults only if not provided or NaN
+    if (isNaN(page) || page === undefined) page = 1;
+    if (isNaN(limit) || limit === undefined) limit = 10;
+
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ msg: 'Page must be greater than 0' });
+    }
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ msg: 'Limit must be between 1 and 100' });
+    }
+
+    const snippet = await Snippet.findById(id).select('comments');
+
+    if (!snippet) {
+      return res.status(404).json({ msg: 'Snippet not found' });
+    }
+
+    const comments = snippet.comments || [];
+    const totalComments = comments.length;
+    const totalPages = Math.ceil(totalComments / limit);
+    const skip = (page - 1) * limit;
+
+    // Get paginated comments (most recent first)
+    const paginatedComments = comments.reverse().slice(skip, skip + limit);
+
+    res.json({
+      success: true,
+      count: paginatedComments.length,
+      totalComments,
+      totalPages,
+      currentPage: page,
+      hasMore: page < totalPages,
+      data: paginatedComments,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ msg: 'Server error while fetching comments' });
   }
 });
 
