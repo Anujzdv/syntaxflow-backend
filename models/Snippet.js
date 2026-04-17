@@ -10,12 +10,12 @@ const SnippetSchema = new Schema({
   },
   title: {
     type: String,
-    required: [true, 'Please add a title'],
     trim: true,
+    default: 'Untitled Snippet',
   },
   description: {
     type: String,
-    required: [true, 'Please add a description'],
+    default: '',
   },
   code: {
     type: String,
@@ -24,7 +24,8 @@ const SnippetSchema = new Schema({
   language: {
     type: String,
     required: [true, 'Please specify the language'],
-    enum: ['Python', 'JavaScript', 'Java', 'C++', 'C'],
+    enum: ['c', 'cpp', 'java', 'html', 'python'],
+    lowercase: true,
   },
   likes: [
     {

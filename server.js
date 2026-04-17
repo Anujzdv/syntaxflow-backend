@@ -18,11 +18,24 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 
 // --- Middlewares ---
-// CORS configuration - specify allowed origins in production
+// CORS configuration - allow requests from frontend
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://syntaxflow.tech' 
-    : ['http://localhost:3000', 'http://localhost:5000'],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'https://syntaxflow.tech',
+      process.env.FRONTEND_URL
+    ].filter(Boolean); // Remove undefined values
+    
+    // Allow requests with no origin (like mobile or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
