@@ -49,6 +49,10 @@ const UserSchema = new mongoose.Schema({
   ]
 }, { timestamps: true }); // Adds createdAt and updatedAt fields
 
+// --- Database Indexes for Performance ---
+UserSchema.index({ email: 1 }); // Speed up email lookups during login/register
+UserSchema.index({ createdAt: -1 }); // Speed up sorting by creation date
+
 // --- Mongoose Middleware ---
 // This function runs BEFORE a new user is saved to the database
 UserSchema.pre('save', async function (next) {
@@ -57,8 +61,8 @@ UserSchema.pre('save', async function (next) {
     return next();
   }
 
-  // Generate a 'salt' to hash the password with
-  const salt = await bcrypt.genSalt(10);
+  // Generate a 'salt' to hash the password with (8 rounds = optimal speed/security)
+  const salt = await bcrypt.genSalt(8);
   // Hash the password
   this.password = await bcrypt.hash(this.password, salt);
   next();

@@ -3,4 +3,6 @@ module.exports = {
   coveragePathIgnorePatterns: ['/node_modules/'],
   testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  testTimeout: 30000,
+  openHandlesTimeout: 30000,
 };

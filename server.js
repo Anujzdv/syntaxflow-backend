@@ -18,8 +18,26 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 
 // --- Middlewares ---
-app.use(cors());
-app.use(express.json());
+// CORS configuration - specify allowed origins in production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'https://syntaxflow.tech' 
+    : ['http://localhost:3000', 'http://localhost:5000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
+// Request timeout middleware (30 seconds)
+app.use((req, res, next) => {
+  res.setTimeout(30000, () => {
+    res.status(408).json({ msg: 'Request timeout - server took too long to respond' });
+  });
+  next();
+});
 
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
@@ -34,10 +52,15 @@ const PORT = process.env.PORT || 5000;
 // --- NEW: Database Connection & Server Start ---
 const startServer = async () => {
   try {
-    // 1. Connect to MongoDB
+    // 1. Connect to MongoDB with optimized connection pooling
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      maxPoolSize: 10,        // Maximum connection pool size
+      minPoolSize: 5,         // Minimum connection pool size
+      socketTimeoutMS: 45000, // Socket timeout
+      serverSelectionTimeoutMS: 5000, // Server selection timeout
+      retryWrites: true,      // Retry writes for better reliability
     });
     console.log("MongoDB connected successfully.");
 

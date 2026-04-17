@@ -60,7 +60,8 @@ describe('Authentication API Tests', () => {
           // missing email and password
         });
 
-      expect(res.statusCode).toBe(500);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.msg).toBe('Please provide all required fields');
     });
   });
 
@@ -102,7 +103,7 @@ describe('Authentication API Tests', () => {
         });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.msg).toBe('Invalid credentials');
+      expect(res.body.msg).toBe('Invalid email or password');
     });
 
     test('Should not login with non-existent email', async () => {
@@ -114,7 +115,7 @@ describe('Authentication API Tests', () => {
         });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.msg).toBe('Invalid credentials');
+      expect(res.body.msg).toBe('Invalid email or password');
     });
 
     test('Should return valid JWT token that can be decoded', async () => {
