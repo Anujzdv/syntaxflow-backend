@@ -29,10 +29,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  // Clear all collections before each test
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
+  // NOTE: Don't clear collections before each test since we're using an isolated
+  // in-memory MongoDB instance. This would wipe out data created in beforeAll hooks.
+  // If needed, individual tests can clear specific collections they use.
 });

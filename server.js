@@ -55,7 +55,7 @@ app.use((req, res, next) => {
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
-app.use('/api/quiz', quizRoutes);
+app.use('/api/quizzes', quizRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
