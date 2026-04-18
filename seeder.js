@@ -1,4 +1,4 @@
-// seeder.js
+// seeder.js - Fixed with proper Quiz schema
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Quiz = require('./models/Quiz');
@@ -6,714 +6,394 @@ const Quiz = require('./models/Quiz');
 dotenv.config();
 
 const sampleQuizzes = [
-  // --- JavaScript (20 Questions) ---
+  // --- JavaScript Quiz ---
   {
+    title: 'JavaScript Fundamentals',
     language: 'JavaScript',
-    question: 'How do you declare a variable that can be changed?',
-    options: ['let myVar = 10;', 'const myVar = 10;', 'var myVar = 10;', 'Both A and C'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What symbol is used for "strict equality" (value and type)?',
-    options: ['==', '===', '=', '!='],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you write a single-line comment?',
-    options: ['// This is a comment', '', '/* This is a comment */', '# This is a comment'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'Which is NOT a primitive data type in JavaScript?',
-    options: ['String', 'Number', 'Boolean', 'Object'],
-    correctAnswer: 3,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you call a function named "myFunction"?',
-    options: ['call myFunction();', 'myFunction;', 'myFunction()', 'run myFunction;'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What keyword is used to define a function?',
-    options: ['function', 'def', 'fun', 'method'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you write an IF statement?',
-    options: ['if i = 5 then', 'if (i == 5)', 'if i == 5', 'if (i = 5)'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How does a FOR loop start?',
-    options: ['for (i = 0; i <= 5; i++)', 'for (i = 0; i <= 5)', 'for i = 1 to 5', 'for (i <= 5; i++)'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you create an array?',
-    options: ['var arr = (1, 2, 3)', 'var arr = {1, 2, 3}', 'var arr = [1, 2, 3]', 'var arr = "1, 2, 3"'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What method returns the length of a string `str`?',
-    options: ['str.length()', 'str.len', 'str.length', 'len(str)'],
-    correctAnswer: 2,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you create an object?',
-    options: ['var car = {type:"Fiat"};', 'var car = (type:"Fiat");', 'var car = [type:"Fiat"];', 'var car = "type:Fiat";'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What does "typeof null" return?',
-    options: ['"null"', '"undefined"', '"object"', '"number"'],
-    correctAnswer: 2,
-    difficulty: 'Hard'
-  },
-  {
-    language: 'JavaScript',
-    question: 'Which operator is used to assign a value?',
-    options: ['=', '==', '===', ':'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What is the correct way to get the element with id "demo"?',
-    options: ['document.getElement("demo")', 'document.getElementById("demo")', 'document.getElementByName("demo")', '#demo'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you declare a constant variable?',
-    options: ['const PI = 3.14;', 'let PI = 3.14;', 'var PI = 3.14;', 'constant PI = 3.14;'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'Which event occurs when the user clicks on an HTML element?',
-    options: ['onchange', 'onmouseclick', 'onmouseover', 'onclick'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you round 7.25 to the nearest integer?',
-    options: ['Math.round(7.25)', 'round(7.25)', 'Math.rnd(7.25)', 'rnd(7.25)'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What operator is the "logical AND"?',
-    options: ['&', 'AND', '&&', '||'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'What operator is the "logical OR"?',
-    options: ['||', 'OR', '|', 'or'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'JavaScript',
-    question: 'How do you write a multi-line comment?',
-    options: ['// ... //', '/* ... */', '', '## ... ##'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
+    difficulty: 'easy',
+    xp_reward: 100,
+    timeLimit: 600,
+    passingScore: 60,
+    isPublished: true,
+    questions: [
+      {
+        question_text: 'How do you declare a variable that can be changed?',
+        code_snippet: 'let x = 10;',
+        type: 'single',
+        explanation: 'The `let` keyword declares a block-scoped variable that can be reassigned.',
+        tags: ['variables', 'declaration'],
+        options: [
+          { text: 'let myVar = 10;', is_correct: true },
+          { text: 'const myVar = 10;', is_correct: false },
+          { text: 'var myVar = 10;', is_correct: false },
+          { text: 'Both B and C', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What symbol is used for "strict equality"?',
+        code_snippet: 'if (5 === "5") { }',
+        type: 'single',
+        explanation: 'The `===` operator checks both value and type.',
+        tags: ['operators', 'equality'],
+        options: [
+          { text: '==', is_correct: false },
+          { text: '===', is_correct: true },
+          { text: '=', is_correct: false },
+          { text: '!=', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you write a single-line comment?',
+        code_snippet: '// This is a comment',
+        type: 'single',
+        explanation: 'Single-line comments in JavaScript use the `//` syntax.',
+        tags: ['comments', 'syntax'],
+        options: [
+          { text: '// This is a comment', is_correct: true },
+          { text: '<!-- This is a comment -->', is_correct: false },
+          { text: '/* This is a comment */', is_correct: false },
+          { text: '# This is a comment', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'Which is NOT a primitive data type?',
+        code_snippet: 'let obj = { name: "John" };',
+        type: 'single',
+        explanation: 'Primitive types: String, Number, Boolean, Symbol, BigInt, null, undefined. Object is not primitive.',
+        tags: ['data-types', 'primitives'],
+        options: [
+          { text: 'String', is_correct: false },
+          { text: 'Number', is_correct: false },
+          { text: 'Boolean', is_correct: false },
+          { text: 'Object', is_correct: true },
+        ]
+      },
+      {
+        question_text: 'How do you call a function?',
+        code_snippet: 'function myFunction() { return 5; }',
+        type: 'single',
+        explanation: 'Functions are called by writing the function name followed by parentheses.',
+        tags: ['functions', 'calling'],
+        options: [
+          { text: 'call myFunction();', is_correct: false },
+          { text: 'myFunction;', is_correct: false },
+          { text: 'myFunction()', is_correct: true },
+          { text: 'run myFunction;', is_correct: false },
+        ]
+      },
+    ]
   },
 
-  // --- Python (20 Questions) ---
+  // --- Python Quiz ---
   {
+    title: 'Python Fundamentals',
     language: 'Python',
-    question: 'How do you write a single-line comment?',
-    options: ['// This is a comment', '# This is a comment', '/* This is a comment */', ''],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'How do you create a variable `x` with the numeric value 5?',
-    options: ['x = 5', 'int x = 5', 'x = 5;', 'x := 5'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is the correct way to print "Hello, World!"?',
-    options: ['print("Hello, World!")', 'echo "Hello, World!"', 'System.out.println("Hello, World!")', 'console.log("Hello, World!")'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is used to define a block of code (like in a loop or function)?',
-    options: ['Curly braces {}', 'Parentheses ()', 'Indentation', 'END keyword'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'How do you start a function definition?',
-    options: ['function myFunc():', 'def myFunc():', 'define myFunc():', 'function.myFunc():'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is the correct way to write an IF statement?',
-    options: ['if (x > y):', 'if x > y:', 'if x > y then:', 'if {x > y}'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'How do you start a FOR loop to count from 0 to 4?',
-    options: ['for x in 5:', 'for x in range(5):', 'for x = 0 to 5:', 'for (x=0; x<5; x++)'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Python',
-    question: 'Which of these is a Python List?',
-    options: ['{1, 2, 3}', '[1, 2, 3]', '(1, 2, 3)', '<1, 2, 3>'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'Which of these is a Python Tuple?',
-    options: ['{1, 2, 3}', '[1, 2, 3]', '(1, 2, 3)', '"1, 2, 3"'],
-    correctAnswer: 2,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Python',
-    question: 'Which of these is a Python Dictionary (dict)?',
-    options: ['{"name": "John", "age": 30}', '["name": "John", "age": 30]', '("name": "John", "age": 30)', '<"name": "John", "age": 30>'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Python',
-    question: 'How do you get the length of a list `my_list`?',
-    options: ['my_list.length()', 'my_list.len', 'length(my_list)', 'len(my_list)'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is the operator for "not equal"?',
-    options: ['!=', '<>', '==!', 'NOT ='],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is the operator for "logical AND"?',
-    options: ['&&', '&', 'AND', 'and'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What is the operator for "logical OR"?',
-    options: ['||', '|', 'OR', 'or'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'How do you get user input from the console?',
-    options: ['input("Enter value: ")', 'cin("Enter value: ")', 'getInput("Enter value: ")', 'console.read("Enter value: ")'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'What keyword is used for "else if"?',
-    options: ['elseif', 'else if', 'elif', 'next if'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'How do you write a multi-line string?',
-    options: ['/* ... */', '""" ... """', 'STRING ... END', '" ... "'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Python',
-    question: 'What does `my_list.append("item")` do?',
-    options: ['Adds "item" to the end of the list', 'Deletes "item" from the list', 'Returns the index of "item"', 'Sorts the list'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Python',
-    question: 'Which data type is immutable (cannot be changed)?',
-    options: ['List', 'Dictionary', 'Set', 'Tuple'],
-    correctAnswer: 3,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Python',
-    question: 'What is the file extension for Python files?',
-    options: ['.py', '.pyt', '.pyth', '.pn'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
+    difficulty: 'easy',
+    xp_reward: 100,
+    timeLimit: 600,
+    passingScore: 60,
+    isPublished: true,
+    questions: [
+      {
+        question_text: 'How do you write a single-line comment?',
+        code_snippet: '# This is a comment',
+        type: 'single',
+        explanation: 'In Python, single-line comments use the `#` symbol.',
+        tags: ['comments', 'syntax'],
+        options: [
+          { text: '// This is a comment', is_correct: false },
+          { text: '# This is a comment', is_correct: true },
+          { text: '/* This is a comment */', is_correct: false },
+          { text: '-- This is a comment', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you create a variable?',
+        code_snippet: 'x = 5',
+        type: 'single',
+        explanation: 'In Python, you simply assign a value to create a variable. No type declaration needed.',
+        tags: ['variables', 'declaration'],
+        options: [
+          { text: 'x = 5', is_correct: true },
+          { text: 'int x = 5;', is_correct: false },
+          { text: 'let x = 5;', is_correct: false },
+          { text: 'var x = 5;', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What is the correct way to print text?',
+        code_snippet: 'print("Hello, World!")',
+        type: 'single',
+        explanation: 'The `print()` function outputs text to the console in Python.',
+        tags: ['output', 'functions'],
+        options: [
+          { text: 'echo "Hello, World!"', is_correct: false },
+          { text: 'print("Hello, World!")', is_correct: true },
+          { text: 'System.out.println("Hello, World!")', is_correct: false },
+          { text: 'console.log("Hello, World!")', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How is code blocks defined in Python?',
+        code_snippet: 'if x > 5:\n    print("Yes")',
+        type: 'single',
+        explanation: 'Python uses indentation to define code blocks, not curly braces.',
+        tags: ['syntax', 'indentation'],
+        options: [
+          { text: 'Curly braces {}', is_correct: false },
+          { text: 'Parentheses ()', is_correct: false },
+          { text: 'Indentation', is_correct: true },
+          { text: 'END keyword', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you define a function?',
+        code_snippet: 'def greet(name):\n    print(f"Hello {name}")',
+        type: 'single',
+        explanation: 'In Python, functions are defined with the `def` keyword.',
+        tags: ['functions', 'definition'],
+        options: [
+          { text: 'function greet():', is_correct: false },
+          { text: 'def greet():', is_correct: true },
+          { text: 'define greet():', is_correct: false },
+          { text: 'fun greet():', is_correct: false },
+        ]
+      },
+    ]
   },
 
-  // --- Java (20 Questions) ---
+  // --- Java Quiz ---
   {
+    title: 'Java Fundamentals',
     language: 'Java',
-    question: 'What is the correct file extension for Java files?',
-    options: ['.java', '.class', '.jav', '.j'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you print "Hello World" to the console?',
-    options: ['print("Hello World");', 'System.out.println("Hello World");', 'echo("Hello World");', 'Console.WriteLine("Hello World");'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you declare an integer variable `x` with the value 5?',
-    options: ['x = 5;', 'int x = 5;', 'num x = 5;', 'x := 5;'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'Every Java statement must end with a...?',
-    options: ['Period (.)', 'Semicolon (;)', 'Colon (:)', 'Nothing'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you write a single-line comment?',
-    options: ['// This is a comment', '# This is a comment', '/* This is a comment */', ''],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you write a multi-line comment?',
-    options: ['// ... //', '""" ... """', '/* ... */', '## ... ##'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'Which data type is used to store text?',
-    options: ['string', 'str', 'String', 'Text'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you create a method named "myMethod"?',
-    options: ['def myMethod() {}', 'myMethod() {}', 'function myMethod() {}', 'void myMethod() {}'],
-    correctAnswer: 3,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'Every Java application must have a main method with what signature?',
-    options: ['public static void main(String[] args)', 'void main()', 'static main()', 'public void main(String args)'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Java',
-    question: 'How do you write an IF statement?',
-    options: ['if (x > y)', 'if x > y:', 'if x > y then', 'if [x > y]'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'What is the keyword for "else if"?',
-    options: ['elseif', 'elif', 'else if', 'next if'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How does a FOR loop start?',
-    options: ['for (i = 0; i <= 5; i++)', 'for (i = 0 to 5)', 'for i in range(5)', 'for (i <= 5; i++)'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Java',
-    question: 'Which keyword is used to create a new object from a class?',
-    options: ['new', 'create', 'alloc', 'build'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you create an array of integers?',
-    options: ['int[] arr = new int[5];', 'int arr[5];', 'int arr = new int[5];', 'List<int> arr = new List<int>();'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Java',
-    question: 'What is the operator for "logical AND"?',
-    options: ['&', '&&', 'and', 'AND'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'What is the operator for "logical OR"?',
-    options: ['|', '||', 'or', 'OR'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you get the length of a string `str`?',
-    options: ['str.length', 'len(str)', 'str.length()', 'str.size()'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'How do you get the length of an array `arr`?',
-    options: ['arr.length()', 'arr.length', 'arr.size()', 'len(arr)'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'Java',
-    question: 'What keyword is used to import a package?',
-    options: ['import', 'include', 'using', 'require'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'Java',
-    question: 'What keyword is used to define a constant (unchangeable) variable?',
-    options: ['const', 'static', 'final', 'let'],
-    correctAnswer: 2,
-    difficulty: 'Medium'
+    difficulty: 'easy',
+    xp_reward: 100,
+    timeLimit: 600,
+    passingScore: 60,
+    isPublished: true,
+    questions: [
+      {
+        question_text: 'What is the correct file extension?',
+        code_snippet: 'public class HelloWorld { }',
+        type: 'single',
+        explanation: 'Java source files must have the `.java` file extension.',
+        tags: ['syntax', 'files'],
+        options: [
+          { text: '.java', is_correct: true },
+          { text: '.class', is_correct: false },
+          { text: '.jav', is_correct: false },
+          { text: '.j', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you print text in Java?',
+        code_snippet: 'System.out.println("Hello");',
+        type: 'single',
+        explanation: 'The `System.out.println()` method outputs text followed by a newline.',
+        tags: ['output', 'methods'],
+        options: [
+          { text: 'printf("Hello");', is_correct: false },
+          { text: 'System.out.println("Hello");', is_correct: true },
+          { text: 'print("Hello");', is_correct: false },
+          { text: 'echo("Hello");', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you declare a variable?',
+        code_snippet: 'int age = 25;',
+        type: 'single',
+        explanation: 'In Java, you must specify the data type when declaring a variable.',
+        tags: ['variables', 'types'],
+        options: [
+          { text: 'age = 25;', is_correct: false },
+          { text: 'int age = 25;', is_correct: true },
+          { text: 'let age = 25;', is_correct: false },
+          { text: 'var age = 25;', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What keyword creates a constant?',
+        code_snippet: 'final double PI = 3.14;',
+        type: 'single',
+        explanation: 'The `final` keyword in Java creates a constant that cannot be changed.',
+        tags: ['constants', 'keywords'],
+        options: [
+          { text: 'const', is_correct: false },
+          { text: 'static', is_correct: false },
+          { text: 'final', is_correct: true },
+          { text: 'fixed', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you get the length of an array?',
+        code_snippet: 'int[] arr = {1, 2, 3}; int len = arr.length;',
+        type: 'single',
+        explanation: 'In Java, the `length` property returns the size of an array.',
+        tags: ['arrays', 'properties'],
+        options: [
+          { text: 'arr.length()', is_correct: false },
+          { text: 'arr.length', is_correct: true },
+          { text: 'arr.size()', is_correct: false },
+          { text: 'len(arr)', is_correct: false },
+        ]
+      },
+    ]
   },
 
-  // --- C++ (20 Questions) ---
+  // --- C++ Quiz ---
   {
+    title: 'C++ Fundamentals',
     language: 'C++',
-    question: 'Which header file is needed to use `cout` and `cin`?',
-    options: ['<stdio.h>', '<iostream>', '<string>', '<math.h>'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you print "Hello World" to the console?',
-    options: ['printf("Hello World");', 'cout << "Hello World";', 'System.out.println("Hello World");', 'print("Hello World");'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What line is needed to avoid writing `std::` before `cout`?',
-    options: ['using namespace std;', 'import std;', 'namespace std;', 'include namespace std;'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you declare an integer variable `x` with the value 5?',
-    options: ['x = 5;', 'x := 5;', 'int x = 5;', 'number x = 5;'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'Every C++ statement must end with a...?',
-    options: ['Semicolon (;)', 'Period (.)', 'Colon (:)', 'Nothing'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you write a single-line comment?',
-    options: ['# This is a comment', '// This is a comment', '/* This is a comment */', ''],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you write a multi-line comment?',
-    options: ['/* ... */', '// ... //', '## ... ##', '""" ... """'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you write an IF statement?',
-    options: ['if x > y:', 'if (x > y)', 'if x > y then', 'if [x > y]'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How does a FOR loop start?',
-    options: ['for (i = 0; i <= 5; i++)', 'for (i = 0 to 5)', 'for i in range(5)', 'for (i <= 5; i++)'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What is the "address-of" operator?',
-    options: ['*', '&', '#', '->'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C++',
-    question: 'What is the "dereference" (value at address) operator?',
-    options: ['*', '&', '$', '->'],
-    correctAnswer: 0,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C++',
-    question: 'How do you declare a pointer `p` to an integer?',
-    options: ['int &p;', 'int *p;', 'int p*;', 'pointer<int> p;'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C++',
-    question: 'What keyword is used to define a constant?',
-    options: ['const', 'final', 'static', 'let'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you read a value into an integer `x`?',
-    options: ['cin >> x;', 'cin << x;', 'read(x);', 'scanf("%d", &x);'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'How do you define a function `myFunction` that returns nothing?',
-    options: ['function myFunction()', 'def myFunction()', 'void myFunction()', 'null myFunction()'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What is the operator for "logical AND"?',
-    options: ['&', '&&', 'and', 'AND'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What is the operator for "logical OR"?',
-    options: ['|', '||', 'or', 'OR'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What is the file extension for C++ header files?',
-    options: ['.h', '.cpp', '.hpp', 'Both .h and .hpp'],
-    correctAnswer: 3,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C++',
-    question: 'What keyword is used to define a class?',
-    options: ['class', 'struct', 'object', 'define'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C++',
-    question: 'What is the main function signature in C++?',
-    options: ['int main()', 'void main()', 'static void main()', 'public main()'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
+    difficulty: 'easy',
+    xp_reward: 100,
+    timeLimit: 600,
+    passingScore: 60,
+    isPublished: true,
+    questions: [
+      {
+        question_text: 'Which header is needed for input/output?',
+        code_snippet: '#include <iostream>',
+        type: 'single',
+        explanation: 'The `<iostream>` header provides `cout` and `cin` for console I/O.',
+        tags: ['headers', 'io'],
+        options: [
+          { text: '<stdio.h>', is_correct: false },
+          { text: '<iostream>', is_correct: true },
+          { text: '<string>', is_correct: false },
+          { text: '<math.h>', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you print to console?',
+        code_snippet: 'cout << "Hello World";',
+        type: 'single',
+        explanation: 'In C++, `cout` with the `<<` operator outputs text to the console.',
+        tags: ['output', 'operators'],
+        options: [
+          { text: 'printf("Hello World");', is_correct: false },
+          { text: 'cout << "Hello World";', is_correct: true },
+          { text: 'System.out.println("Hello World");', is_correct: false },
+          { text: 'print("Hello World");', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What line avoids writing std::',
+        code_snippet: 'using namespace std;',
+        type: 'single',
+        explanation: 'The `using namespace std;` directive allows you to use `cout` instead of `std::cout`.',
+        tags: ['namespace', 'syntax'],
+        options: [
+          { text: 'using namespace std;', is_correct: true },
+          { text: 'import std;', is_correct: false },
+          { text: 'namespace std;', is_correct: false },
+          { text: 'include namespace std;', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you declare an integer?',
+        code_snippet: 'int x = 5;',
+        type: 'single',
+        explanation: 'The `int` keyword declares an integer variable in C++.',
+        tags: ['variables', 'types'],
+        options: [
+          { text: 'x = 5;', is_correct: false },
+          { text: 'int x = 5;', is_correct: true },
+          { text: 'integer x = 5;', is_correct: false },
+          { text: 'num x = 5;', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What symbol ends every statement?',
+        code_snippet: 'cout << "Hello";',
+        type: 'single',
+        explanation: 'Every statement in C++ must end with a semicolon (;).',
+        tags: ['syntax', 'punctuation'],
+        options: [
+          { text: 'Semicolon (;)', is_correct: true },
+          { text: 'Period (.)', is_correct: false },
+          { text: 'Colon (:)', is_correct: false },
+          { text: 'Nothing', is_correct: false },
+        ]
+      },
+    ]
   },
 
-  // --- C (20 Questions) ---
+  // --- C Quiz ---
   {
+    title: 'C Fundamentals',
     language: 'C',
-    question: 'Which header file is needed to use `printf` and `scanf`?',
-    options: ['<iostream>', '<stdlib.h>', '<stdio.h>', '<string.h>'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you print "Hello World" to the console?',
-    options: ['printf("Hello World\\n");', 'cout << "Hello World";', 'print("Hello World");', 'echo("Hello World");'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you declare an integer variable `x` with the value 5?',
-    options: ['x = 5;', 'int x = 5;', 'x := 5;', 'var x = 5;'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'Every C statement must end with a...?',
-    options: ['Semicolon (;)', 'Period (.)', 'Nothing', 'End;'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you write a single-line comment?',
-    options: ['# This is a comment', '// This is a comment', '/* This is a comment */', 'Both B and C'],
-    correctAnswer: 3,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C',
-    question: 'How do you write a multi-line comment?',
-    options: ['/* ... */', '// ... //', '## ... ##', '""" ... """'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you write an IF statement?',
-    options: ['if x > y:', 'if (x > y)', 'if x > y then', 'if [x > y]'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How does a FOR loop start?',
-    options: ['for (i = 0; i < 5; i++)', 'for (i = 0 to 5)', 'for i in range(5)', 'for (i < 5; i++)'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the "address-of" operator?',
-    options: ['*', '&', '#', '->'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the "dereference" (value at address) operator?',
-    options: ['*', '&', '$', '->'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you declare a pointer `p` to an integer?',
-    options: ['int &p;', 'int *p;', 'int p*;', 'pointer<int> p;'],
-    correctAnswer: 1,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C',
-    question: 'What keyword is used to define a constant?',
-    options: ['const', 'final', 'static', 'let'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you read an integer value into `x`?',
-    options: ['cin >> x;', 'read("%d", &x);', 'scanf("%d", &x);', 'input(&x);'],
-    correctAnswer: 2,
-    difficulty: 'Medium'
-  },
-  {
-    language: 'C',
-    question: 'How do you define a function `myFunction` that returns nothing?',
-    options: ['function myFunction()', 'def myFunction()', 'void myFunction()', 'null myFunction()'],
-    correctAnswer: 2,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the operator for "logical AND"?',
-    options: ['&', '&&', 'and', 'AND'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the operator for "logical OR"?',
-    options: ['|', '||', 'or', 'OR'],
-    correctAnswer: 1,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the file extension for C header files?',
-    options: ['.h', '.c', '.ch', '.header'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What keyword is used to define a structure?',
-    options: ['struct', 'class', 'object', 'define'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'What is the main function signature in C?',
-    options: ['int main()', 'void main()', 'Both A and B are common', 'public main()'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
-  },
-  {
-    language: 'C',
-    question: 'How do you define an array `arr` of 5 integers?',
-    options: ['int arr[5];', 'int arr = new int[5];', 'int[5] arr;', 'arr[5] as int;'],
-    correctAnswer: 0,
-    difficulty: 'Easy'
+    difficulty: 'easy',
+    xp_reward: 100,
+    timeLimit: 600,
+    passingScore: 60,
+    isPublished: true,
+    questions: [
+      {
+        question_text: 'Which header is needed for printf?',
+        code_snippet: '#include <stdio.h>',
+        type: 'single',
+        explanation: 'The `<stdio.h>` header provides `printf` and `scanf` functions.',
+        tags: ['headers', 'io'],
+        options: [
+          { text: '<iostream>', is_correct: false },
+          { text: '<stdlib.h>', is_correct: false },
+          { text: '<stdio.h>', is_correct: true },
+          { text: '<string.h>', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you print text?',
+        code_snippet: 'printf("Hello World\\n");',
+        type: 'single',
+        explanation: 'The `printf()` function prints formatted text to the console.',
+        tags: ['output', 'functions'],
+        options: [
+          { text: 'printf("Hello World\\n");', is_correct: true },
+          { text: 'cout << "Hello World";', is_correct: false },
+          { text: 'print("Hello World");', is_correct: false },
+          { text: 'echo("Hello World");', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you declare an integer?',
+        code_snippet: 'int x = 5;',
+        type: 'single',
+        explanation: 'The `int` keyword is used to declare an integer variable in C.',
+        tags: ['variables', 'types'],
+        options: [
+          { text: 'x = 5;', is_correct: false },
+          { text: 'int x = 5;', is_correct: true },
+          { text: 'integer x = 5;', is_correct: false },
+          { text: 'var x = 5;', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'What symbol ends statements?',
+        code_snippet: 'int x = 10;',
+        type: 'single',
+        explanation: 'All C statements must terminate with a semicolon (;).',
+        tags: ['syntax', 'punctuation'],
+        options: [
+          { text: 'Semicolon (;)', is_correct: true },
+          { text: 'Period (.)', is_correct: false },
+          { text: 'Colon (:)', is_correct: false },
+          { text: 'Nothing', is_correct: false },
+        ]
+      },
+      {
+        question_text: 'How do you write a comment?',
+        code_snippet: '// This is a comment',
+        type: 'single',
+        explanation: 'Single-line comments in C use `//` or multi-line comments use `/* ... */`.',
+        tags: ['comments', 'syntax'],
+        options: [
+          { text: '# This is a comment', is_correct: false },
+          { text: '// This is a comment', is_correct: true },
+          { text: '-- This is a comment', is_correct: false },
+          { text: 'REM This is a comment', is_correct: false },
+        ]
+      },
+    ]
   },
 ];
 
@@ -732,7 +412,7 @@ const connectDB = async () => {
 
 const importData = async () => {
   try {
-    // await Quiz.deleteMany(); // <-- Comment this out if you want to ADD questions
+    await Quiz.deleteMany(); // Clear old data
     await Quiz.insertMany(sampleQuizzes);
     console.log('Data Imported Successfully!');
     process.exit();
@@ -753,18 +433,11 @@ const destroyData = async () => {
   }
 };
 
-// --- How to Run This Script ---
-// In your terminal:
-// To add data: node seeder.js
-// To delete data: node seeder.js -d
+connectDB();
 
-const main = async () => {
-  await connectDB();
-  if (process.argv[2] === '-d') {
-    await destroyData();
-  } else {
-    await importData();
-  }
-};
-
-main();
+// Handle command line arguments
+if (process.argv[2] === '-d') {
+  destroyData();
+} else {
+  importData();
+}
