@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
 const QuizAttempt = require('../models/QuizAttempt');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 
 // ============================================
@@ -549,6 +550,35 @@ router.post('/:identifier/submit', auth, async (req, res) => {
     try {
       await quizAttempt.save();
       quizAttemptId = quizAttempt._id;
+      
+      // Update user stats (xp, accuracy, totalQuizzes)
+      const user = await User.findById(userId);
+      if (user) {
+        // Increment XP
+        user.xp = (user.xp || 0) + xpEarned;
+        
+        // Update total quizzes
+        const totalQuizzesFromDb = await QuizAttempt.countDocuments({ userId: userId });
+        user.totalQuizzes = totalQuizzesFromDb + 1;
+        
+        // Calculate average accuracy from all quiz attempts
+        const accuracyData = await QuizAttempt.aggregate([
+          { $match: { userId: userId } },
+          { $group: { _id: null, avgAccuracy: { $avg: '$accuracy' } } }
+        ]);
+        if (accuracyData.length > 0) {
+          user.avgAccuracy = parseFloat(accuracyData[0].avgAccuracy.toFixed(2));
+        }
+        
+        // Update streak (simplified: increment if passed, reset if failed)
+        if (passed) {
+          user.streak = (user.streak || 0) + 1;
+        } else {
+          user.streak = 0;
+        }
+        
+        await user.save();
+      }
     } catch (dbErr) {
       // Demo mode: Database not connected, but still return success
       console.warn('⚠️  Cannot save quiz attempt (demo mode): ' + dbErr.message);

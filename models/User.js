@@ -46,12 +46,34 @@ const UserSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }
-  ]
+  ],
+  xp: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  streak: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  avgAccuracy: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  totalQuizzes: {
+    type: Number,
+    default: 0,
+    min: 0
+  }
 }, { timestamps: true }); // Adds createdAt and updatedAt fields
 
 // --- Database Indexes for Performance ---
 UserSchema.index({ email: 1 }); // Speed up email lookups during login/register
 UserSchema.index({ createdAt: -1 }); // Speed up sorting by creation date
+UserSchema.index({ xp: -1, avgAccuracy: -1 }); // Speed up leaderboard sorting
 
 // --- Mongoose Middleware ---
 // This function runs BEFORE a new user is saved to the database
