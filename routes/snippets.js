@@ -19,7 +19,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Validate language is one of the allowed values
-    const allowedLanguages = ['c', 'cpp', 'java', 'html', 'python'];
+    const allowedLanguages = ['c', 'cpp', 'java', 'html', 'python', 'javascript', 'typescript', 'react', 'nodejs', 'css', 'bash', 'sql'];
     if (!allowedLanguages.includes(language.toLowerCase())) {
       return res.status(400).json({ 
         msg: `Language "${language}" is not supported. Allowed languages: ${allowedLanguages.join(', ')}`

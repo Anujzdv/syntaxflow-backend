@@ -24,7 +24,7 @@ const SnippetSchema = new Schema({
   language: {
     type: String,
     required: [true, 'Please specify the language'],
-    enum: ['c', 'cpp', 'java', 'html', 'python'],
+    enum: ['c', 'cpp', 'java', 'html', 'python', 'javascript', 'typescript', 'react', 'nodejs', 'css', 'bash', 'sql'],
     lowercase: true,
   },
   likes: [
