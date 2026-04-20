@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const snippetRoutes = require('./routes/snippets');
 const quizRoutes = require('./routes/quiz');
 const leaderboardRoutes = require('./routes/leaderboard');
+const usersRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 
 // Initialize Express app
@@ -58,6 +59,7 @@ app.use('/api/snippets', snippetRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/quiz', quizRoutes); // Legacy path for backward compatibility
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 
 // --- Define Port ---

@@ -4,6 +4,13 @@ const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
+const {
+  calculateBadges,
+  buildSkillData,
+  buildRecentActivity,
+  calculateGlobalRank,
+  buildProfileObject
+} = require('../utils/profileHelper');
 
 // --- Register Endpoint ---
 // POST /api/auth/register
@@ -107,10 +114,27 @@ router.get('/me', auth, async (req, res) => {
   try {
     // req.user is populated by the 'auth' middleware
     const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
+    
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Calculate global rank and build complete profile
+    const globalRank = await calculateGlobalRank(user.xp || 0);
+    
+    const [skillData, recentActivity] = await Promise.all([
+      buildSkillData(user._id),
+      buildRecentActivity(user._id)
+    ]);
+
+    const badges = calculateBadges({ ...user.toObject(), globalRank });
+    const profile = buildProfileObject(user, globalRank, skillData, recentActivity, badges);
+
+    res.json(profile);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server Error');
+    res.status(500).json({ msg: 'Server Error', error: err.message });
   }
 });
+
 module.exports = router;
