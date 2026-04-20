@@ -449,9 +449,10 @@ router.post('/:identifier/submit', auth, async (req, res) => {
         correctCount++;
       }
 
+      // Convert to ObjectIds for database storage
       processedAnswers.push({
-        questionId: answer.questionId,
-        selectedOptionIds: answer.selectedOptionIds,
+        questionId: new mongoose.Types.ObjectId(answer.questionId),
+        selectedOptionIds: answer.selectedOptionIds.map(id => new mongoose.Types.ObjectId(id)),
         isCorrect: isCorrect,
       });
     });
