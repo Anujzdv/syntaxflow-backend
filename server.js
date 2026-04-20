@@ -56,6 +56,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/quiz', quizRoutes); // Legacy path for backward compatibility
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -64,6 +65,8 @@ const PORT = process.env.PORT || 5000;
 
 // --- NEW: Database Connection & Server Start ---
 const startServer = async () => {
+  let dbConnected = false;
+  
   try {
     // 1. Connect to MongoDB with optimized connection pooling
     await mongoose.connect(process.env.MONGO_URI, {
@@ -75,18 +78,23 @@ const startServer = async () => {
       serverSelectionTimeoutMS: 5000, // Server selection timeout
       retryWrites: true,      // Retry writes for better reliability
     });
-    console.log("MongoDB connected successfully.");
-
-    // 2. Start the server ONLY after DB is connected
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-
+    console.log("✓ MongoDB connected successfully.");
+    dbConnected = true;
   } catch (err) {
-    // 3. If DB connection fails, log the error and exit
-    console.error("MongoDB connection error:", err);
-    process.exit(1); // Stop the server process
+    // Connection failed - but we'll still start the server in demo mode
+    console.warn("⚠️  MongoDB connection failed. Running in DEMO MODE with sample data.");
+    console.warn("Error:", err.message);
+    dbConnected = false;
   }
+
+  // 2. Start the server regardless of DB connection
+  // (For demo/development mode with sample data)
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Server is running on port ${PORT}`);
+    if (!dbConnected) {
+      console.log("📚 Using sample quiz data (not persisted)");
+    }
+  });
 };
 
 // --- Export app and startServer for testing ---
