@@ -269,7 +269,14 @@ async function getWeeklyLeaderboard(userId, res) {
         }
       },
       {
-        // Unwind user details
+        // SAFETY: Filter out records where user was deleted (userDetails is empty)
+        // preserveNullAndEmptyArrays: false (default) removes entries with empty userDetails
+        $match: {
+          userDetails: { $ne: [] }
+        }
+      },
+      {
+        // Unwind user details (now safe, no deleted users)
         $unwind: '$userDetails'
       },
       {

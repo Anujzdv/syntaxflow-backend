@@ -554,23 +554,29 @@ router.post('/:identifier/submit', auth, async (req, res) => {
       // Update user stats (xp, accuracy, totalQuizzes)
       const user = await User.findById(userId);
       if (user) {
-        // Increment XP
+        // 1. Increment XP
         user.xp = (user.xp || 0) + xpEarned;
         
-        // Update total quizzes
-        const totalQuizzesFromDb = await QuizAttempt.countDocuments({ userId: userId });
-        user.totalQuizzes = totalQuizzesFromDb + 1;
+        // 2. Increment totalQuizzes
+        user.totalQuizzes = (user.totalQuizzes || 0) + 1;
         
-        // Calculate average accuracy from all quiz attempts
-        const accuracyData = await QuizAttempt.aggregate([
-          { $match: { userId: userId } },
-          { $group: { _id: null, avgAccuracy: { $avg: '$accuracy' } } }
-        ]);
-        if (accuracyData.length > 0) {
-          user.avgAccuracy = parseFloat(accuracyData[0].avgAccuracy.toFixed(2));
+        // 3. Update average accuracy using incremental formula:
+        // newAvgAccuracy = ((oldAvgAccuracy * oldTotalQuizzes) + newQuizAccuracy) / (newTotalQuizzes)
+        const oldTotalQuizzes = user.totalQuizzes - 1; // Before incrementing
+        const oldAvgAccuracy = user.avgAccuracy || 0;
+        const newQuizAccuracy = accuracy; // accuracy from current quiz
+        
+        if (oldTotalQuizzes === 0) {
+          // First quiz
+          user.avgAccuracy = parseFloat(accuracy.toFixed(2));
+        } else {
+          // Incremental average calculation (more efficient than re-querying all attempts)
+          user.avgAccuracy = parseFloat(
+            (((oldAvgAccuracy * oldTotalQuizzes) + newQuizAccuracy) / user.totalQuizzes).toFixed(2)
+          );
         }
         
-        // Update streak (simplified: increment if passed, reset if failed)
+        // 4. Update streak (increment if passed, reset if failed)
         if (passed) {
           user.streak = (user.streak || 0) + 1;
         } else {
