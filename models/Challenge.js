@@ -36,6 +36,12 @@ const ChallengeSchema = new mongoose.Schema({
     },
     default: 'pending'
   },
+  // Linked quiz for this challenge
+  quizId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Quiz',
+    default: null
+  },
   // Scores and results
   challengerScore: {
     type: Number,
@@ -47,9 +53,25 @@ const ChallengeSchema = new mongoose.Schema({
     default: null,
     min: [0, 'Score cannot be negative']
   },
+  // XP earned by each player
+  challengerXP: {
+    type: Number,
+    default: 0,
+    min: [0, 'XP cannot be negative']
+  },
+  targetXP: {
+    type: Number,
+    default: 0,
+    min: [0, 'XP cannot be negative']
+  },
   winner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    default: null
+  },
+  // Completion timestamp
+  completedAt: {
+    type: Date,
     default: null
   },
   // Auto-expire challenges after 48 hours

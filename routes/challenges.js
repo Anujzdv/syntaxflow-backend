@@ -328,4 +328,82 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// ============================================
+// GET /api/challenges/:id/result - Get Challenge Result
+// ============================================
+// Returns: winner, scores, XP earned for each player
+// Available after both players have submitted
+router.get('/:id/result', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate challenge ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ 
+        msg: 'Invalid challenge ID format' 
+      });
+    }
+
+    const challenge = await Challenge.findById(id)
+      .populate('challenger', 'name username profileImage xp')
+      .populate('targetUser', 'name username profileImage xp')
+      .populate('winner', 'name username');
+
+    if (!challenge) {
+      return res.status(404).json({ 
+        msg: 'Challenge not found' 
+      });
+    }
+
+    // Check if challenge is completed
+    if (challenge.status !== 'completed') {
+      return res.status(400).json({ 
+        msg: `Challenge is not yet completed. Status: ${challenge.status}`,
+        status: challenge.status,
+        challengerScore: challenge.challengerScore,
+        targetScore: challenge.targetScore
+      });
+    }
+
+    // Return challenge result
+    res.json({
+      success: true,
+      challengeId: id,
+      status: challenge.status,
+      challenger: {
+        userId: challenge.challenger._id,
+        name: challenge.challenger.name,
+        username: challenge.challenger.username,
+        score: challenge.challengerScore,
+        xpEarned: challenge.challengerXP,
+        isWinner: challenge.winner?.toString() === challenge.challenger._id.toString()
+      },
+      targetUser: {
+        userId: challenge.targetUser._id,
+        name: challenge.targetUser.name,
+        username: challenge.targetUser.username,
+        score: challenge.targetScore,
+        xpEarned: challenge.targetXP,
+        isWinner: challenge.winner?.toString() === challenge.targetUser._id.toString()
+      },
+      winner: challenge.winner ? {
+        userId: challenge.winner._id,
+        name: challenge.winner.name,
+        username: challenge.winner.username
+      } : null,
+      isDraw: !challenge.winner,
+      completedAt: challenge.completedAt,
+      topic: challenge.topic,
+      difficulty: challenge.difficulty
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching challenge result:', err.message);
+    res.status(500).json({ 
+      msg: 'Server Error', 
+      error: err.message 
+    });
+  }
+});
+
 module.exports = router;

@@ -6,6 +6,7 @@ const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
 const QuizAttempt = require('../models/QuizAttempt');
 const User = require('../models/User');
+const Challenge = require('../models/Challenge');
 const mongoose = require('mongoose');
 
 // ============================================
@@ -583,6 +584,94 @@ router.post('/:identifier/submit', auth, async (req, res) => {
           user.streak = 0;
         }
         
+        // 5. Check if this quiz is part of a challenge
+        let challengeBonus = 0;
+        try {
+          const challenge = await Challenge.findOne({
+            quizId: quiz._id,
+            status: 'accepted',
+            $or: [
+              { challenger: req.user.id },
+              { targetUser: req.user.id }
+            ]
+          });
+
+          if (challenge) {
+            // Determine which player this is (challenger or target)
+            const isChallengerUser = challenge.challenger.toString() === req.user.id;
+            
+            // Update challenge score for this player
+            if (isChallengerUser) {
+              challenge.challengerScore = score;
+            } else {
+              challenge.targetScore = score;
+            }
+
+            // Check if both players have submitted
+            if (challenge.challengerScore !== null && challenge.targetScore !== null) {
+              // Both players submitted - calculate results
+              challenge.status = 'completed';
+              challenge.completedAt = new Date();
+
+              // Determine winner
+              if (challenge.challengerScore > challenge.targetScore) {
+                challenge.winner = challenge.challenger;
+              } else if (challenge.targetScore > challenge.challengerScore) {
+                challenge.winner = challenge.targetUser;
+              }
+              // else: draw (winner remains null)
+
+              // Apply XP bonus logic:
+              // Winner: +20% bonus XP
+              // Loser: normal XP
+              // Draw: both get +10% bonus
+              let challengerFinalXP = xpEarned;
+              let targetFinalXP = xpEarned; // Will be updated for target user separately
+
+              if (challenge.challengerScore > challenge.targetScore) {
+                // Challenger wins
+                challengerFinalXP = Math.round(xpEarned * 1.2); // +20% bonus
+                targetFinalXP = xpEarned; // normal XP
+              } else if (challenge.targetScore > challenge.challengerScore) {
+                // Target wins
+                challengerFinalXP = xpEarned; // normal XP
+                targetFinalXP = Math.round(xpEarned * 1.2); // +20% bonus
+              } else {
+                // Draw - both get +10% bonus
+                challengerFinalXP = Math.round(xpEarned * 1.1);
+                targetFinalXP = Math.round(xpEarned * 1.1);
+              }
+
+              challenge.challengerXP = challengerFinalXP;
+              challenge.targetXP = targetFinalXP;
+
+              // If current user is challenger, update their XP with bonus
+              if (isChallengerUser) {
+                challengeBonus = challengerFinalXP - xpEarned;
+              } else {
+                challengeBonus = targetFinalXP - xpEarned;
+              }
+            } else {
+              // Only one player submitted so far - store the XP for later
+              if (isChallengerUser) {
+                challenge.challengerXP = xpEarned;
+              } else {
+                challenge.targetXP = xpEarned;
+              }
+            }
+
+            await challenge.save();
+          }
+        } catch (challengeErr) {
+          console.warn('⚠️  Challenge detection error: ' + challengeErr.message);
+          // Continue without challenge bonus if error occurs
+        }
+
+        // Add challenge bonus to user's XP if applicable
+        if (challengeBonus > 0) {
+          user.xp += challengeBonus;
+        }
+        
         await user.save();
       }
     } catch (dbErr) {
@@ -601,6 +690,8 @@ router.post('/:identifier/submit', auth, async (req, res) => {
       accuracy: parseFloat(accuracy.toFixed(2)),
       passed: passed,
       xpEarned: xpEarned,
+      challengeBonus: challengeBonus > 0 ? challengeBonus : undefined,
+      totalXP: xpEarned + challengeBonus,
       timeTaken: timeTaken,
       flagged: flagged,
       flagReason: flagReason,
