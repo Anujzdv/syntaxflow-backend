@@ -28,6 +28,7 @@ const corsOptions = {
       'http://localhost:5000',
       'https://syntaxflow.tech',
       process.env.FRONTEND_URL
+      'https://syntaxflow-frontend.pages.dev' // ✅ this is add for cloudflare fronted deployed (manually)
     ].filter(Boolean); // Remove undefined values
     
     // Allow requests with no origin (like mobile or curl requests)
