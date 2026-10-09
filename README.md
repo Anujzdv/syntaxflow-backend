@@ -1,264 +1,158 @@
-# 🚀 Syntax Flow - Backend API
+# 🚀 Syntax|Flow — Backend API
 
-**Real-time Code Execution & Collaboration Platform - Backend**
+**Competitive Developer Quiz, Challenge Arena & Adaptive Practice Engine**
 
-A robust and scalable Node.js backend API that powers the Syntax Flow platform, enabling real-time code execution, instant collaboration, and seamless user management.
+A production-ready Node.js & Express REST API powering Syntax|Flow. Provides JWT-based authentication, timed technical quizzes, 1v1 challenge arena, developer code feeds, community leaderboards, and an **Adaptive AI Practice Engine** with deterministic difficulty progression.
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=black)
-![REST API](https://img.shields.io/badge/REST%20API-4CAF50?style=flat-square)
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4.18-000000?style=flat-square&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%207-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Tests](https://img.shields.io/badge/Jest-112%20Passing-brightgreen?style=flat-square)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Server](#running-the-server)
-- [API Endpoints](#api-endpoints)
-- [Database Schema](#database-schema)
-- [Deployment](#deployment)
+- [Core Features](#-core-features)
+- [Adaptive AI Practice Engine](#-adaptive-ai-practice-engine)
+- [Tech Stack](#-tech-stack)
+- [API Architecture & Endpoints](#-api-architecture--endpoints)
+- [Environment Variables](#-environment-variables)
+- [Local Development & Testing](#-local-development--testing)
+- [Production Deployment](#-production-deployment)
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-- ✅ **Real-time Code Execution** - Execute code in multiple programming languages
-- ✅ **User Authentication** - Secure Firebase-based authentication
-- ✅ **Project Management** - Create, update, and manage code projects
-- ✅ **Collaboration** - Real-time updates with WebSocket support
-- ✅ **Code Sharing** - Share projects with other users
-- ✅ **Execution History** - Track code execution history and outputs
-- ✅ **RESTful APIs** - Clean, documented REST endpoints
-- ✅ **CORS Support** - Cross-origin resource sharing enabled
+- **JWT Authentication** — Secure password hashing with bcryptjs, session verification, user profiles, and rate-limited endpoints.
+- **Timed Technical Quizzes** — Language-specific quizzes (JavaScript, Python, Java, C++, C) with server-side authoritative grading, anti-cheat detection, and XP calculation.
+- **Adaptive Practice Mode** — Deterministic 2-streak difficulty adjustment algorithm (`easy` ↔ `medium` ↔ `hard`) with optional server-side Google Gemini AI generation for single MCQs.
+- **Challenge Arena** — Asynchronous peer-to-peer coding challenges with XP wagers and resolution flows.
+- **Social Feed & Code Snippets** — Developer snippet sharing, syntax highlighting, pagination, liking, and comments.
+- **Competitive Leaderboard** — Global, weekly, and language-filtered rankings computed via MongoDB aggregation pipelines.
+- **Readiness & Liveness Probes** — `/health/live` and `/health/ready` for automated zero-downtime monitoring.
+
+---
+
+## 🧠 Adaptive AI Practice Engine
+
+Adaptive Practice Mode personalizes question difficulty in real time based on user performance:
+
+1. **Deterministic Difficulty Algorithm (`utils/adaptiveEngine.js`)**:
+   - Evaluates a rolling performance window.
+   - **2 consecutive correct answers** ➔ Elevates difficulty (`easy` ➔ `medium` ➔ `hard`). Clamped at `hard`.
+   - **2 consecutive incorrect answers** ➔ Lowers difficulty (`hard` ➔ `medium` ➔ `easy`). Clamped at `easy`.
+   - Mixed performance maintains current difficulty.
+   - Resets streak counters upon difficulty transitions.
+2. **Server-Side Authoritative Grading**:
+   - Clients never receive `correctOptionId`, answer flags, or explanations before submitting an answer.
+   - Answers are verified on the server; duplicate submissions are prevented with idempotency keys.
+3. **Hybrid Question Pool**:
+   - Pulls from a curated bank of language-specific questions.
+   - Optionally generates fresh practice MCQs via **Google Gemini API** (`services/aiGenerator.js`) when `GEMINI_API_KEY` is configured.
+   - Strictly validates candidate questions (4 distinct options, 1 valid answer, non-empty explanations) before delivery, seamlessly falling back to curated questions on failure or timeout.
 
 ---
 
 ## 🛠 Tech Stack
 
-### **Runtime & Framework**
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web application framework
-- **REST API** - Standard architectural style
-
-### **Database & Authentication**
-- **Firebase** - Backend-as-a-Service
-- **Firebase Firestore** - NoSQL document database
-- **Firebase Admin SDK** - Server-side Firebase access
-
-### **Real-time Communication**
-- **Socket.io** - Real-time event-based communication
-- **WebSocket** - Protocol for two-way communication
-
-### **Development Tools**
-- **dotenv** - Environment variable management
-- **Nodemon** - Auto-reload on code changes
-- **CORS** - Cross-Origin Resource Sharing
-
----
-
-## 🚀 Installation
-
-### Prerequisites
-
-- **Node.js** (v16.x or higher)
-- **npm** (v7.x or higher)
-- **Git**
-- **Firebase Project** with Firestore enabled
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/Anujzdv/syntaxflow-backend.git
-cd syntaxflow-backend
-```
-
-### Step 2: Install Dependencies
-
-```bash
-npm install
-```
-
----
-
-## ⚙️ Configuration
-
-### Step 1: Create Environment File
-
-```bash
-cp .env.example .env
-```
-
-### Step 2: Configure Environment Variables
-
-Edit `.env` file:
-
-```env
-NODE_ENV=development
-PORT=5000
-FRONTEND_URL=http://localhost:3000
-
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY=your-private-key
-FIREBASE_CLIENT_EMAIL=your-client-email
-FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
-
-EXECUTION_TIMEOUT=5000
-MAX_OUTPUT_SIZE=5mb
-```
-
-### Step 3: Get Firebase Credentials
-
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project
-3. Go to **Project Settings** → **Service Accounts**
-4. Click **Generate New Private Key**
-5. Extract and add values to `.env`
-
----
-
-## ▶️ Running the Server
-
-### Development Mode
-
-```bash
-npm run dev
-```
-
-Server starts at: `http://localhost:5000`
-
-### Production Mode
-
-```bash
-npm start
-```
+- **Runtime**: Node.js (v18+)
+- **Server Framework**: Express.js
+- **Database**: MongoDB via Mongoose 7
+- **Authentication**: JSON Web Tokens (`jsonwebtoken`) & `bcryptjs`
+- **Testing**: Jest, Supertest, `mongodb-memory-server` (100% in-memory isolated tests)
+- **AI Provider**: Google Gemini API (server-side only)
 
 ---
 
 ## 📡 API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
+### 🔐 Authentication (`/api/auth`)
+- `POST /api/auth/register` — Create account, returns `{ token, user }`
+- `POST /api/auth/login` — Login, returns `{ token, user }`
+- `GET /api/auth/me` — Authenticated profile (includes email, role, stats)
 
-### Projects
-- `POST /api/projects/create` - Create new project
-- `GET /api/projects` - Get all projects
-- `GET /api/projects/:projectId` - Get project details
-- `PUT /api/projects/:projectId` - Update project
-- `DELETE /api/projects/:projectId` - Delete project
+### 🎯 Adaptive Practice Mode (`/api/quizzes/adaptive`)
+- `POST /api/quizzes/adaptive/sessions` — Start an adaptive session (`{ language, topic, startingDifficulty }`). Returns safe question DTO (no answer leakage).
+- `POST /api/quizzes/adaptive/sessions/:sessionId/answers` — Submit an answer (`{ questionId, selectedOptionId, idempotencyKey }`). Grades server-side, updates difficulty, returns result, explanation, and next question.
+- `GET /api/quizzes/adaptive/sessions/:sessionId/summary` — Retrieve session accuracy, total answered, difficulty progression, and recommendations.
+- `POST /api/quizzes/adaptive/sessions/:sessionId/finish` — Gracefully completes session.
 
-### Code Execution
-- `POST /api/execution/run` - Execute code
-- `GET /api/execution/history` - Get execution history
-- `GET /api/execution/:executionId` - Get execution details
+### ⏱ Standard Quizzes (`/api/quizzes`)
+- `GET /api/quizzes/:identifier` — Fetch quiz by ID or language slug (`javascript`, `python`, `java`, `c++`, `c`). Answer keys stripped.
+- `POST /api/quizzes/:quizId/submit` — Submit quiz attempt, computes score, XP, and streak.
 
-### Users
-- `GET /api/users/profile` - Get user profile
-- `PUT /api/users/profile` - Update profile
+### 🏆 Leaderboard (`/api/leaderboard`)
+- `GET /api/leaderboard` — Top users (filtered by timeframe `all-time` | `weekly` and language).
 
----
+### ⚔️ Challenges (`/api/challenges`)
+- `POST /api/challenges` — Create a 1v1 challenge.
+- `GET /api/challenges/me` — Fetch user's pending, active, and completed challenges.
+- `POST /api/challenges/:id/accept` — Accept incoming challenge.
+- `POST /api/challenges/:id/decline` — Decline incoming challenge.
 
-## 💾 Database Schema
+### 💬 Social Feed (`/api/snippets`)
+- `GET /api/snippets` — Paginated code snippets.
+- `POST /api/snippets` — Share a code snippet.
+- `POST /api/snippets/:id/like` — Like/unlike snippet.
+- `POST /api/snippets/:id/comment` — Post a comment.
 
-### Users Collection
-```javascript
-users/{uid}
-{
-  uid: string,
-  email: string,
-  name: string,
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-### Projects Collection
-```javascript
-projects/{projectId}
-{
-  id: string,
-  title: string,
-  code: string,
-  language: string,
-  ownerId: uid,
-  visibility: "private" | "public",
-  createdAt: timestamp
-}
-```
-
-### Execution History
-```javascript
-executions/{executionId}
-{
-  id: string,
-  projectId: string,
-  userId: uid,
-  output: string,
-  status: "success" | "error",
-  executionTime: number,
-  createdAt: timestamp
-}
-```
+### 🩺 Health Checks
+- `GET /health/live` — Returns 200 with server uptime.
+- `GET /health/ready` — Returns 200 when MongoDB is connected; 503 if disconnected.
 
 ---
 
-## 🌐 Deployment
+## ⚙️ Environment Variables
 
-### Deploy to Render
-
-1. Push code to GitHub
-2. Go to [Render](https://render.com)
-3. Create new **Web Service**
-4. Connect GitHub repository
-5. Set build command: `npm install`
-6. Set start command: `npm start`
-7. Add environment variables
-8. Deploy
-
-### Deploy to Railway
+Create `.env` in the backend root based on `.env.example`:
 
 ```bash
-npm i -g @railway/cli
-railway login
-railway link
-railway up
+# Database
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/syntaxflow?retryWrites=true&w=majority
+
+# Authentication
+JWT_SECRET=super_secret_jwt_random_key_min_32_characters
+
+# Server Port & Mode
+PORT=5000
+NODE_ENV=development
+
+# Allowed Frontend URL (CORS)
+FRONTEND_URL=http://localhost:5173
+
+# Optional: AI Question Generator
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ---
 
-## 🤝 Contributing
+## 🧪 Local Development & Testing
 
-Contributions are welcome! Please follow conventional commits:
+```bash
+# Install dependencies
+npm install
 
+# Run automated test suites (7 suites, 112 tests)
+npm test
+
+# Start development server
+npm run dev
+
+# Start production server
+npm start
 ```
-feat: Add new feature
-fix: Fix bug
-docs: Update documentation
-```
 
 ---
 
-## 📄 License
+## 🚀 Production Deployment
 
-MIT License
-
----
-
-## 👥 Contact
-
-- 📧 **Email**: anujzdv@gmail.com
-- 💼 **LinkedIn**: [Anuj Kumar](https://linkedin.com/in/anujzdv)
-- 🐙 **GitHub**: [@Anujzdv](https://github.com/Anujzdv)
-
----
-
-<div align="center">
-
-**Made with ❤️ by Anuj Kumar**
-
-</div>
+1. Set environment variables on your host (Render, Railway, or AWS):
+   - `MONGO_URI`
+   - `JWT_SECRET`
+   - `NODE_ENV=production`
+   - `FRONTEND_URL` (URL of deployed frontend)
+   - `GEMINI_API_KEY` (optional)
+2. Use `/health/live` and `/health/ready` for container health checks.
+3. Node process exits with code 1 if MongoDB connection fails in production mode to avoid hanging broken containers.

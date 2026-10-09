@@ -8,6 +8,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Challenge = require('../models/Challenge');
 const User = require('../models/User');
+const Quiz = require('../models/Quiz');
 const auth = require('../middleware/auth');
 
 // ============================================
@@ -21,30 +22,42 @@ router.post('/', auth, async (req, res) => {
     // Validate input
     if (!targetUserId || !topic || !difficulty) {
       return res.status(400).json({ 
+        message: 'Please provide targetUserId, topic, and difficulty',
         msg: 'Please provide targetUserId, topic, and difficulty' 
       });
     }
 
     // Validate topic and difficulty enums
-    const validTopics = ['javascript', 'react', 'python', 'nodejs'];
+    const validTopics = ['javascript', 'react', 'python', 'nodejs', 'java', 'c++', 'c'];
     const validDifficulties = ['easy', 'medium', 'hard'];
 
-    if (!validTopics.includes(topic)) {
+    if (!validTopics.includes(topic.toLowerCase())) {
       return res.status(400).json({ 
+        message: `Topic must be one of: ${validTopics.join(', ')}`,
         msg: `Topic must be one of: ${validTopics.join(', ')}` 
       });
     }
 
-    if (!validDifficulties.includes(difficulty)) {
+    if (!validDifficulties.includes(difficulty.toLowerCase())) {
       return res.status(400).json({ 
+        message: `Difficulty must be one of: ${validDifficulties.join(', ')}`,
         msg: `Difficulty must be one of: ${validDifficulties.join(', ')}` 
       });
     }
 
     // Prevent self-challenges
-    if (challengerId === targetUserId) {
+    if (String(challengerId) === String(targetUserId)) {
       return res.status(400).json({ 
+        message: 'You cannot challenge yourself!',
         msg: 'You cannot challenge yourself!' 
+      });
+    }
+
+    // Validate target user ID format
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ 
+        message: 'Invalid target user ID',
+        msg: 'Invalid target user ID' 
       });
     }
 
@@ -52,6 +65,7 @@ router.post('/', auth, async (req, res) => {
     const targetUser = await User.findById(targetUserId);
     if (!targetUser) {
       return res.status(404).json({ 
+        message: 'Target user not found',
         msg: 'Target user not found' 
       });
     }
@@ -65,16 +79,24 @@ router.post('/', auth, async (req, res) => {
 
     if (existingChallenge) {
       return res.status(409).json({ 
+        message: 'You already have a pending challenge with this user',
         msg: 'You already have a pending challenge with this user' 
       });
     }
+
+    // Attempt to link a matching quiz for this topic
+    const escapedTopic = topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchingQuiz = await Quiz.findOne({
+      language: { $regex: new RegExp(`^${escapedTopic}$`, 'i') }
+    });
 
     // Create and save the challenge
     const challenge = new Challenge({
       challenger: challengerId,
       targetUser: targetUserId,
-      topic,
-      difficulty
+      topic: topic.toLowerCase(),
+      difficulty: difficulty.toLowerCase(),
+      quizId: matchingQuiz ? matchingQuiz._id : null
     });
 
     await challenge.save();
@@ -86,6 +108,7 @@ router.post('/', auth, async (req, res) => {
     ]);
 
     res.status(201).json({
+      message: 'Challenge created successfully',
       msg: 'Challenge created successfully',
       challenge
     });
@@ -93,6 +116,7 @@ router.post('/', auth, async (req, res) => {
   } catch (err) {
     console.error('❌ Error creating challenge:', err.message);
     res.status(500).json({ 
+      message: 'Server Error',
       msg: 'Server Error', 
       error: err.message 
     });
@@ -106,8 +130,8 @@ router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Convert to ObjectId
-    const userObjectId = mongoose.Types.ObjectId(userId);
+    // Convert to ObjectId safely with new
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
     // Get incoming challenges (where user is targetUser and status is pending)
     const incoming = await Challenge.find({
@@ -133,7 +157,7 @@ router.get('/', auth, async (req, res) => {
         { challenger: userObjectId },
         { targetUser: userObjectId }
       ],
-      status: { $in: ['completed', 'declined'] }
+      status: { $in: ['accepted', 'completed', 'declined'] }
     })
       .populate('challenger', 'name username profileImage')
       .populate('targetUser', 'name username profileImage')
@@ -365,31 +389,35 @@ router.get('/:id/result', auth, async (req, res) => {
       });
     }
 
+    const challengerIdStr = challenge.challenger?._id ? challenge.challenger._id.toString() : challenge.challenger?.toString();
+    const targetUserIdStr = challenge.targetUser?._id ? challenge.targetUser._id.toString() : challenge.targetUser?.toString();
+    const winnerIdStr = challenge.winner?._id ? challenge.winner._id.toString() : challenge.winner?.toString();
+
     // Return challenge result
     res.json({
       success: true,
       challengeId: id,
       status: challenge.status,
       challenger: {
-        userId: challenge.challenger._id,
-        name: challenge.challenger.name,
-        username: challenge.challenger.username,
+        userId: challenge.challenger?._id || challenge.challenger,
+        name: challenge.challenger?.name || 'Challenger',
+        username: challenge.challenger?.username || challenge.challenger?.name || 'challenger',
         score: challenge.challengerScore,
         xpEarned: challenge.challengerXP,
-        isWinner: challenge.winner?.toString() === challenge.challenger._id.toString()
+        isWinner: Boolean(winnerIdStr && challengerIdStr && winnerIdStr === challengerIdStr)
       },
       targetUser: {
-        userId: challenge.targetUser._id,
-        name: challenge.targetUser.name,
-        username: challenge.targetUser.username,
+        userId: challenge.targetUser?._id || challenge.targetUser,
+        name: challenge.targetUser?.name || 'Opponent',
+        username: challenge.targetUser?.username || challenge.targetUser?.name || 'opponent',
         score: challenge.targetScore,
         xpEarned: challenge.targetXP,
-        isWinner: challenge.winner?.toString() === challenge.targetUser._id.toString()
+        isWinner: Boolean(winnerIdStr && targetUserIdStr && winnerIdStr === targetUserIdStr)
       },
       winner: challenge.winner ? {
-        userId: challenge.winner._id,
+        userId: challenge.winner._id || challenge.winner,
         name: challenge.winner.name,
-        username: challenge.winner.username
+        username: challenge.winner.username || challenge.winner.name
       } : null,
       isDraw: !challenge.winner,
       completedAt: challenge.completedAt,

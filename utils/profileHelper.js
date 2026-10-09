@@ -85,7 +85,7 @@ function calculateBadges(user) {
  */
 async function buildSkillData(userId) {
   try {
-    const userObjectId = mongoose.Types.ObjectId(userId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
     
     const skillData = await QuizAttempt.aggregate([
       {
@@ -226,8 +226,11 @@ async function calculateGlobalRank(userXp) {
 function buildProfileObject(user, globalRank, skillData, recentActivity, badges) {
   return {
     _id: user._id,
+    id: user._id,
     name: user.name,
-    username: user.name || 'User', // Using name as username
+    username: user.username || user.name || 'User',
+    email: user.email,
+    role: user.role || 'user',
     bio: user.bio || "I'm on SyntaxFlow!",
     profileImage: user.profileImage || 'default_avatar.png',
     xp: user.xp || 0,
@@ -235,9 +238,11 @@ function buildProfileObject(user, globalRank, skillData, recentActivity, badges)
     avgAccuracy: user.avgAccuracy || 0,
     totalQuizzes: user.totalQuizzes || 0,
     globalRank: globalRank,
+    rank: globalRank,
     skillData: skillData,
     recentActivity: recentActivity,
-    badges: badges
+    badges: badges,
+    createdAt: user.createdAt
   };
 }
 

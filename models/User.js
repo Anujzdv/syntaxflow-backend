@@ -6,11 +6,18 @@ const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, "Please provide a name"],
+    trim: true,
+  },
+  username: {
+    type: String,
+    trim: true,
   },
   email: {
     type: String,
     required: [true, "Please provide an email"],
     unique: true,
+    lowercase: true,
+    trim: true,
     match: [
       /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
       'Please fill a valid email address',
@@ -71,13 +78,22 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true }); // Adds createdAt and updatedAt fields
 
 // --- Database Indexes for Performance ---
-UserSchema.index({ email: 1 }); // Speed up email lookups during login/register
+UserSchema.index({ email: 1 }, { unique: true }); // Unique email index
+UserSchema.index({ username: 1 }, { unique: true, sparse: true }); // Unique username index
 UserSchema.index({ createdAt: -1 }); // Speed up sorting by creation date
 UserSchema.index({ xp: -1, avgAccuracy: -1 }); // Speed up leaderboard sorting
 
 // --- Mongoose Middleware ---
 // This function runs BEFORE a new user is saved to the database
 UserSchema.pre('save', async function (next) {
+  // Ensure username is populated and normalized
+  if (!this.username && this.name) {
+    const base = this.name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '') || 'user';
+    this.username = `${base}_${Date.now().toString().slice(-4)}`;
+  } else if (this.username) {
+    this.username = this.username.toLowerCase().trim();
+  }
+
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) {
     return next();

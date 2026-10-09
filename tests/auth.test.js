@@ -274,5 +274,14 @@ describe('Authentication API Tests', () => {
       expect(res.statusCode).toBe(401);
       expect(res.body.msg).toBe('Token is not valid');
     });
+
+    test('Should reject demo-token-for-testing and not allow authentication bypass', async () => {
+      const res = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', 'Bearer demo-token-for-testing');
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.msg).toBe('Token is not valid');
+    });
   });
 });

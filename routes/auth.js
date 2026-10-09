@@ -20,31 +20,87 @@ router.post('/register', async (req, res) => {
   try {
     // Validate input
     if (!name || !email || !password) {
-      return res.status(400).json({ msg: 'Please provide all required fields' });
+      return res.status(400).json({ message: 'Please provide all required fields', msg: 'Please provide all required fields' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+      return res.status(400).json({ message: 'Password must be at least 6 characters', msg: 'Password must be at least 6 characters' });
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    const normalizedName = String(name).trim();
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (normalizedName.length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters', msg: 'Name must be at least 2 characters' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address', msg: 'Please provide a valid email address' });
+    }
+
+    // Check if user already exists by email
+    let user = await User.findOne({ email: normalizedEmail });
     if (user) {
-      return res.status(400).json({ msg: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists', msg: 'User already exists' });
+    }
+
+    // Determine unique username
+    let chosenUsername = req.body.username ? String(req.body.username).trim().toLowerCase() : null;
+    if (chosenUsername) {
+      const existingUserByUsername = await User.findOne({ username: chosenUsername });
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: 'Username is already taken', msg: 'Username is already taken' });
+      }
+    } else {
+      let baseUsername = normalizedName.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '') || 'user';
+      chosenUsername = baseUsername;
+      const existingUserByUsername = await User.findOne({ username: chosenUsername });
+      if (existingUserByUsername) {
+        chosenUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
     // Create new user instance (password will be hashed by pre-save hook)
     user = new User({
-      name,
-      email,
+      name: normalizedName,
+      username: chosenUsername,
+      email: normalizedEmail,
       password,
     });
 
     // Save user to the database
     await user.save();
 
-    // Send success response
-    res.status(201).json({ msg: 'User registered successfully' });
+    // Create JWT token for immediate session creation
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    const safeUser = {
+      id: user._id,
+      _id: user._id,
+      name: user.name,
+      username: user.username || user.name,
+      email: user.email,
+      bio: user.bio,
+      profileImage: user.profileImage,
+      xp: user.xp || 0,
+      streak: user.streak || 0,
+      role: user.role || 'user'
+    };
+
+    // Send success response with token and user
+    res.status(201).json({
+      message: 'User registered successfully',
+      msg: 'User registered successfully',
+      token,
+      user: safeUser
+    });
 
   } catch (err) {
     console.error(err.message);
@@ -52,10 +108,11 @@ router.post('/register', async (req, res) => {
     // Handle specific validation errors
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ msg: messages[0] || 'Validation error' });
+      const errorMsg = messages[0] || 'Validation error';
+      return res.status(400).json({ message: errorMsg, msg: errorMsg });
     }
     
-    res.status(500).json({ msg: 'Server error', error: err.message });
+    res.status(500).json({ message: 'Server error', msg: 'Server error', error: err.message });
   }
 });
 
@@ -67,20 +124,21 @@ router.post('/login', async (req, res) => {
   try {
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({ msg: 'Please provide email and password' });
+      return res.status(400).json({ message: 'Please provide email and password', msg: 'Please provide email and password' });
     }
 
     // Check if user exists
     // We .select('+password') to include the password, as it's hidden by default
-    const user = await User.findOne({ email }).select('+password');
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
-      return res.status(400).json({ msg: 'Invalid email or password' });
+      return res.status(400).json({ message: 'Invalid email or password', msg: 'Invalid email or password' });
     }
 
     // Compare passwords
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Invalid email or password' });
+      return res.status(400).json({ message: 'Invalid email or password', msg: 'Invalid email or password' });
     }
 
     // --- Create and sign a JSON Web Token (JWT) ---
@@ -97,17 +155,30 @@ router.post('/login', async (req, res) => {
       (err, token) => {
         if (err) {
           console.error(err);
-          return res.status(500).json({ msg: 'Error generating token' });
+          return res.status(500).json({ message: 'Error generating token', msg: 'Error generating token' });
         }
         
-        // Send the token back to the client
-        res.json({ token });
+        const safeUser = {
+          id: user._id,
+          _id: user._id,
+          name: user.name,
+          username: user.username || user.name,
+          email: user.email,
+          bio: user.bio,
+          profileImage: user.profileImage,
+          xp: user.xp || 0,
+          streak: user.streak || 0,
+          role: user.role || 'user'
+        };
+
+        // Send token and safe user object back to the client
+        res.json({ token, user: safeUser });
       }
     );
 
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ msg: 'Server error', error: err.message });
+    res.status(500).json({ message: 'Server error', msg: 'Server error', error: err.message });
   }
 });
 router.get('/me', auth, async (req, res) => {

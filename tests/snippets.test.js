@@ -132,7 +132,7 @@ describe('Snippets API Tests - Global Feed Feature', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           code: 'code here',
-          language: 'javascript'
+          language: 'ruby'
         });
 
       expect(res.statusCode).toBe(400);
@@ -509,6 +509,7 @@ describe('Snippets API Tests - Global Feed Feature', () => {
   describe('GET /api/snippets - Pagination (Infinite Scroll)', () => {
 
     beforeEach(async () => {
+      await Snippet.deleteMany({});
       // Create 25 snippets for pagination testing
       for (let i = 1; i <= 25; i++) {
         await request(app)

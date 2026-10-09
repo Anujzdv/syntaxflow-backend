@@ -157,55 +157,75 @@ router.get('/', auth, async (req, res) => {
 // Helper: Global Leaderboard Logic
 async function getGlobalLeaderboard(userId, res) {
   try {
-    // 1. Get Top 50 users by XP (primary) and avgAccuracy (tie-breaker)
+    // 1. Get Top 50 users by XP (primary) and avgAccuracy (tie-breaker), then by _id for determinism
     const topUsers = await User.find()
       .select('_id name username xp avgAccuracy streak avatar profileImage')
-      .sort({ xp: -1, avgAccuracy: -1 })
+      .sort({ xp: -1, avgAccuracy: -1, _id: 1 })
       .limit(50)
       .lean();
 
-    // Add rank to each user
+    // Add rank and guaranteed username/avatar to each user
     const topUsersWithRank = topUsers.map((user, index) => ({
       ...user,
+      username: user.username || user.name || 'User',
       rank: index + 1
     }));
 
     // 2. Get current user's data
     const currentUser = await User.findById(userId)
-      .select('_id xp avgAccuracy streak')
+      .select('_id name username xp avgAccuracy streak')
       .lean();
 
     if (!currentUser) {
       return res.status(404).json({ msg: 'Current user not found' });
     }
 
-    // 3. Calculate current user's global rank
+    // 3. Calculate current user's global rank & gap to next rank
     let currentUserRank = 'Unranked';
     let gapToNext = null;
     let nextRankXp = null;
 
     if (currentUser.xp > 0) {
-      // Count users with more XP than current user
-      const usersAbove = await User.countDocuments({
-        xp: { $gt: currentUser.xp }
-      });
-      currentUserRank = usersAbove + 1;
+      // Check if current user is already within the loaded top 50
+      const userIndex = topUsersWithRank.findIndex(
+        u => String(u._id) === String(currentUser._id)
+      );
 
-      // Find the user ranked exactly one spot above current user
-      if (currentUserRank > 1) {
-        const nextUser = await User.findOne()
+      if (userIndex !== -1) {
+        currentUserRank = userIndex + 1;
+        if (userIndex > 0) {
+          nextRankXp = topUsersWithRank[userIndex - 1].xp;
+          gapToNext = Math.max(0, nextRankXp - currentUser.xp);
+        } else {
+          // User is #1
+          gapToNext = 0;
+          nextRankXp = currentUser.xp;
+        }
+      } else {
+        // Outside top 50: count how many users have higher XP or higher accuracy on tie
+        const usersAbove = await User.countDocuments({
+          $or: [
+            { xp: { $gt: currentUser.xp } },
+            { xp: currentUser.xp, avgAccuracy: { $gt: currentUser.avgAccuracy || 0 } }
+          ]
+        });
+        currentUserRank = usersAbove + 1;
+
+        // Find user immediately ahead
+        const nextUser = await User.findOne({
+          $or: [
+            { xp: { $gt: currentUser.xp } },
+            { xp: currentUser.xp, avgAccuracy: { $gt: currentUser.avgAccuracy || 0 } }
+          ]
+        })
           .select('xp')
-          .sort({ xp: -1, avgAccuracy: -1 })
-          .skip(usersAbove - 1) // Skip to get the user above
+          .sort({ xp: 1, avgAccuracy: 1, _id: 1 })
           .lean();
 
         if (nextUser) {
           nextRankXp = nextUser.xp;
-          gapToNext = nextRankXp - currentUser.xp;
+          gapToNext = Math.max(0, nextRankXp - currentUser.xp);
         }
-      } else if (currentUserRank === 1) {
-        // User is rank 1
-        gapToNext = 0;
       }
     }
 
@@ -283,11 +303,12 @@ async function getWeeklyLeaderboard(userId, res) {
         // Project final fields
         $project: {
           _id: '$_id',
-          username: '$userDetails.name',
-          avatar: { $substr: ['$userDetails.name', 0, 1] }, // First letter as avatar
+          username: { $ifNull: ['$userDetails.username', '$userDetails.name'] },
+          name: '$userDetails.name',
+          avatar: { $substr: [{ $ifNull: ['$userDetails.name', 'U'] }, 0, 1] },
           xp: '$weeklyXp',
           avgAccuracy: { $round: ['$avgAccuracy', 2] },
-          streak: '$userDetails.streak'
+          streak: { $ifNull: ['$userDetails.streak', 0] }
         }
       }
     ]);
@@ -295,27 +316,31 @@ async function getWeeklyLeaderboard(userId, res) {
     // Add rank to each user
     const topUsersWithRank = weeklyData.map((user, index) => ({
       ...user,
+      username: user.username || user.name || 'User',
       rank: index + 1
     }));
 
     // 3. Get current user's weekly data
-    const userObjectId = mongoose.Types.ObjectId(userId);
-    const currentUserWeekly = await QuizAttempt.aggregate([
-      {
-        $match: {
-          userId: userObjectId,
-          createdAt: { $gte: sevenDaysAgo }
+    let currentUserWeekly = [];
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      currentUserWeekly = await QuizAttempt.aggregate([
+        {
+          $match: {
+            userId: userObjectId,
+            createdAt: { $gte: sevenDaysAgo }
+          }
+        },
+        {
+          $group: {
+            _id: '$userId',
+            weeklyXp: { $sum: '$xpEarned' },
+            avgAccuracy: { $avg: '$accuracy' },
+            quizzesPlayed: { $sum: 1 }
+          }
         }
-      },
-      {
-        $group: {
-          _id: '$userId',
-          weeklyXp: { $sum: '$xpEarned' },
-          avgAccuracy: { $avg: '$accuracy' },
-          quizzesPlayed: { $sum: 1 }
-        }
-      }
-    ]);
+      ]);
+    }
 
     let currentUserRank = 'Unranked';
     let gapToNext = null;

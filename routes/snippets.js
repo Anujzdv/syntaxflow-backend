@@ -1,6 +1,7 @@
 // routes/snippets.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const Snippet = require('../models/Snippet');
 const User = require('../models/User');
@@ -120,6 +121,10 @@ router.get('/:id/comments', async (req, res) => {
   try {
     const { id } = req.params;
     
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ msg: 'Invalid snippet ID format' });
+    }
+
     // Get pagination parameters with proper handling of 0 values
     let page = parseInt(req.query.page);
     let limit = parseInt(req.query.limit);
@@ -148,7 +153,7 @@ router.get('/:id/comments', async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Get paginated comments (most recent first)
-    const paginatedComments = comments.reverse().slice(skip, skip + limit);
+    const paginatedComments = [...comments].reverse().slice(skip, skip + limit);
 
     res.json({
       success: true,
@@ -171,6 +176,10 @@ router.get('/:id/comments', async (req, res) => {
 // @access  Private
 router.post('/:id/like', auth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ msg: 'Invalid snippet ID format' });
+    }
+
     const snippet = await Snippet.findById(req.params.id);
 
     // Check if snippet exists
@@ -362,5 +371,36 @@ router.post('/report/:id', auth, async (req, res) => {
       res.status(500).send('Server Error');
     }
   });
+
+// --- Delete a Snippet ---
+// @route   DELETE /api/snippets/:id
+// @desc    Delete a code snippet (creator or admin)
+// @access  Private
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ msg: 'Invalid snippet ID format' });
+    }
+
+    const snippet = await Snippet.findById(id);
+    if (!snippet) {
+      return res.status(404).json({ msg: 'Snippet not found' });
+    }
+
+    const isCreator = snippet.user.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ msg: 'User not authorized to delete this snippet' });
+    }
+
+    await Snippet.findByIdAndDelete(id);
+    res.json({ msg: 'Snippet deleted successfully', snippetId: id });
+  } catch (err) {
+    console.error('Error deleting snippet:', err.message);
+    res.status(500).json({ msg: 'Server error while deleting snippet' });
+  }
+});
 
 module.exports = router;
